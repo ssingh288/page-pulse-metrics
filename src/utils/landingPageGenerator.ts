@@ -1,3 +1,4 @@
+
 // This utility generates more intelligent landing page content using keyword analysis and industry knowledge
 
 type ContentBlock = {
@@ -583,4 +584,67 @@ export const generateEnhancedHtml = (
               </div>
             </div>
             
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 60px;
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 60px; align-items: center;">
+              <div>
+                <h2 class="section-title" style="text-align: left;">Don't Miss Out</h2>
+                ${content.paragraphs.slice(2).map(p => `<p>${p}</p>`).join('')}
+                <button class="cta-button" style="margin-top: 20px;">${content.cta}</button>
+              </div>
+              <div>
+                <h2 class="section-title" style="text-align: left;">Testimonials</h2>
+                <div class="testimonials" style="grid-template-columns: 1fr;">
+                  ${content.testimonials.map(testimonial => `
+                    <div class="testimonial">
+                      <p>${testimonial}</p>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      `;
+    }
+  };
+  
+  // Combine it all into HTML
+  return `
+    <!DOCTYPE html>
+    <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${title}</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Montserrat:wght@400;600;700;800&family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+        <style>
+          ${generateCss()}
+          
+          /* Responsive styles */
+          @media (max-width: 768px) {
+            h1 { font-size: 2.5rem; }
+            .subheader { font-size: 1.25rem; }
+            section { padding: 60px 0; }
+            .container > div { grid-template-columns: 1fr !important; }
+            .features { margin-top: 40px; }
+          }
+          
+          /* Button for regeneration (hidden in actual landing page) */
+          .regenerate-controls {
+            display: none;
+          }
+        </style>
+      </head>
+      <body>
+        ${generateLayout()}
+        
+        <footer>
+          <div class="container" style="text-align: center; padding: 30px 0; color: #666;">
+            &copy; ${new Date().getFullYear()} ${title}. All rights reserved.
+          </div>
+        </footer>
+      </body>
+    </html>
+  `;
+};
