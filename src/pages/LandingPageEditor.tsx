@@ -1,0 +1,278 @@
+
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import Layout from "@/components/layout/Layout";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/context/AuthContext";
+import {
+  Loader2,
+  Save,
+  Eye,
+  ArrowLeft,
+  Upload,
+  Code,
+  PanelLeft
+} from "lucide-react";
+import {
+  Card,
+  CardContent,
+} from "@/components/ui/card";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+
+interface LandingPage {
+  id: string;
+  title: string;
+  html_content: string;
+  published_url: string | null;
+  published_at: string | null;
+}
+
+const LandingPageEditor = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [page, setPage] = useState<LandingPage | null>(null);
+  const [htmlContent, setHtmlContent] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+
+  useEffect(() => {
+    const fetchPage = async () => {
+      try {
+        if (!user || !id) return;
+        
+        setLoading(true);
+        
+        const { data, error } = await supabase
+          .from('landing_pages')
+          .select('id, title, html_content, published_url, published_at')
+          .eq('id', id)
+          .eq('user_id', user.id)
+          .single();
+        
+        if (error) {
+          throw error;
+        }
+        
+        setPage(data);
+        setHtmlContent(data.html_content || "");
+      } catch (error: any) {
+        toast.error(`Error loading page: ${error.message}`);
+        navigate('/pages');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPage();
+  }, [id, user, navigate]);
+
+  const handleSave = async () => {
+    try {
+      if (!user || !id) return;
+      
+      setSaving(true);
+      
+      const { error } = await supabase
+        .from('landing_pages')
+        .update({
+          html_content: htmlContent,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .eq('user_id', user.id);
+      
+      if (error) {
+        throw error;
+      }
+      
+      toast.success("Changes saved successfully");
+    } catch (error: any) {
+      toast.error(`Error saving changes: ${error.message}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handlePublish = async () => {
+    try {
+      if (!user || !id) return;
+      
+      setPublishing(true);
+      
+      // In a real app, this would upload the page to a hosting service
+      // and return a URL. For now, we'll simulate it.
+      const publishedUrl = `https://pagepulse-${id.slice(0, 8)}.example.com`;
+      
+      const { error } = await supabase
+        .from('landing_pages')
+        .update({
+          published_url: publishedUrl,
+          published_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .eq('user_id', user.id);
+      
+      if (error) {
+        throw error;
+      }
+      
+      setPage(prev => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          published_url: publishedUrl,
+          published_at: new Date().toISOString()
+        };
+      });
+      
+      toast.success("Page published successfully");
+    } catch (error: any) {
+      toast.error(`Error publishing page: ${error.message}`);
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <Layout title="Editor">
+        <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!page) {
+    return (
+      <Layout title="Editor">
+        <div className="text-center py-12">
+          <h3 className="text-lg font-medium mb-4">Page not found</h3>
+          <Button onClick={() => navigate('/pages')}>
+            <ArrowLeft className="mr-2 h-4 w-4" /> Back to Pages
+          </Button>
+        </div>
+      </Layout>
+    );
+  }
+
+  return (
+    <Layout title={`Editing: ${page.title}`}>
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <Button variant="outline" size="sm" onClick={() => navigate('/pages')}>
+            <ArrowLeft className="mr-2 h-4 w-4" /> Back
+          </Button>
+          
+          <div className="flex items-center gap-2">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Eye className="mr-2 h-4 w-4" /> Preview
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Page Preview</DialogTitle>
+                  <DialogDescription>
+                    This is how your page will look when published.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="border rounded-md mt-4">
+                  <iframe
+                    title="Preview"
+                    srcDoc={htmlContent}
+                    className="w-full h-[70vh]"
+                    style={{ border: 'none' }}
+                  />
+                </div>
+              </DialogContent>
+            </Dialog>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSave}
+              disabled={saving}
+            >
+              {saving ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="mr-2 h-4 w-4" />
+              )}
+              Save
+            </Button>
+            
+            <Button
+              size="sm"
+              onClick={handlePublish}
+              disabled={publishing}
+            >
+              {publishing ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Upload className="mr-2 h-4 w-4" />
+              )}
+              {page.published_at ? "Update" : "Publish"}
+            </Button>
+          </div>
+        </div>
+        
+        <Tabs defaultValue="editor" className="w-full">
+          <TabsList>
+            <TabsTrigger value="editor" className="flex items-center">
+              <Code className="mr-2 h-4 w-4" /> HTML Editor
+            </TabsTrigger>
+            <TabsTrigger value="visual" className="flex items-center">
+              <PanelLeft className="mr-2 h-4 w-4" /> Visual Editor
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="editor">
+            <Card>
+              <CardContent className="p-4">
+                <textarea
+                  value={htmlContent}
+                  onChange={(e) => setHtmlContent(e.target.value)}
+                  className="w-full h-[calc(100vh-18rem)] font-mono p-4 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="visual">
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-center p-12 border-2 border-dashed rounded-md">
+                  <h3 className="text-lg font-medium mb-2">Visual Editor Coming Soon</h3>
+                  <p className="text-muted-foreground">
+                    The WYSIWYG editor will be available in the next update.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </Layout>
+  );
+};
+
+export default LandingPageEditor;

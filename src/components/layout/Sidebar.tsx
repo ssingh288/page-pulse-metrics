@@ -1,132 +1,113 @@
 
+import { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import {
-  LayoutDashboard,
-  List,
-  ChartPie,
-  Image,
-  User,
+  Home,
+  FileText,
+  BarChart2,
+  Upload,
   Settings,
-  LineChart,
-  Map,
+  PlusCircle,
+  User,
+  LogOut,
 } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarTrigger,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-} from "@/components/ui/sidebar";
-import { Link } from "react-router-dom";
+interface NavItemProps {
+  icon: React.ElementType;
+  label: string;
+  href: string;
+  active?: boolean;
+  onClick?: () => void;
+}
 
-// Menu items
-const mainMenuItems = [
-  {
-    title: "Dashboard",
-    icon: LayoutDashboard,
-    path: "/",
-  },
-  {
-    title: "Landing Pages",
-    icon: List,
-    path: "/pages",
-  },
-  {
-    title: "Heatmaps",
-    icon: Map,
-    path: "/heatmaps",
-  },
-  {
-    title: "A/B Tests",
-    icon: LineChart,
-    path: "/ab-tests",
-  },
-  {
-    title: "Audience",
-    icon: ChartPie,
-    path: "/audience",
-  },
-  {
-    title: "Media",
-    icon: Image,
-    path: "/media",
-  },
-];
-
-const accountMenuItems = [
-  {
-    title: "Profile",
-    icon: User,
-    path: "/profile",
-  },
-  {
-    title: "Settings",
-    icon: Settings,
-    path: "/settings",
-  },
-];
+const NavItem = ({
+  icon: Icon,
+  label,
+  href,
+  active = false,
+  onClick,
+}: NavItemProps) => (
+  <Link
+    to={href}
+    onClick={onClick}
+    className={cn(
+      "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-all hover:bg-accent",
+      active ? "bg-accent text-accent-foreground" : "text-muted-foreground"
+    )}
+  >
+    <Icon className="h-4 w-4" />
+    <span>{label}</span>
+  </Link>
+);
 
 export function AppSidebar() {
+  const location = useLocation();
+  const { signOut } = useAuth();
+  
+  const isActive = (path: string) => location.pathname === path;
+  const isPartialActive = (path: string) => location.pathname.startsWith(path);
+
   return (
-    <Sidebar>
-      <SidebarHeader className="flex items-center py-6 px-4">
-        <div className="flex items-center space-x-2">
+    <aside className="hidden w-64 flex-col border-r p-4 md:flex min-h-screen">
+      <div className="flex items-center mb-10 mt-2">
+        <Link to="/dashboard" className="flex items-center gap-2">
           <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
-            <span className="font-bold text-primary-foreground">O</span>
+            <span className="font-bold text-xs text-primary-foreground">PP</span>
           </div>
-          <span className="text-lg font-bold">OptimizeAI</span>
-        </div>
-        <div className="ml-auto">
-          <SidebarTrigger />
-        </div>
-      </SidebarHeader>
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Analytics</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {mainMenuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <Link to={item.path}>
-                      <item.icon className="h-4 w-4 mr-2" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-        <SidebarGroup>
-          <SidebarGroupLabel>Account</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {accountMenuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <Link to={item.path}>
-                      <item.icon className="h-4 w-4 mr-2" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-      <SidebarFooter className="py-4 px-4">
-        <div className="text-xs text-sidebar-foreground/70">
-          OptimizeAI v1.0.0
-        </div>
-      </SidebarFooter>
-    </Sidebar>
+          <span className="text-xl font-bold">PagePulse.ai</span>
+        </Link>
+      </div>
+      
+      <div className="space-y-1">
+        <NavItem
+          icon={Home}
+          label="Dashboard"
+          href="/dashboard"
+          active={isActive("/dashboard")}
+        />
+        <NavItem
+          icon={FileText}
+          label="Landing Pages"
+          href="/pages"
+          active={isPartialActive("/pages")}
+        />
+        <NavItem
+          icon={Upload}
+          label="Media Library"
+          href="/media"
+          active={isActive("/media")}
+        />
+      </div>
+      
+      <Separator className="my-4" />
+      
+      <div>
+        <Button asChild variant="default" className="w-full justify-start mb-4">
+          <Link to="/create-page">
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Create Landing Page
+          </Link>
+        </Button>
+      </div>
+      
+      <div className="mt-auto space-y-1">
+        <NavItem
+          icon={User}
+          label="Profile"
+          href="/profile"
+          active={isActive("/profile")}
+        />
+        <NavItem
+          icon={LogOut}
+          label="Logout"
+          href="#"
+          onClick={signOut}
+        />
+      </div>
+    </aside>
   );
 }

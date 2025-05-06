@@ -9,7 +9,236 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      ai_suggestions: {
+        Row: {
+          applied_at: string | null
+          content: string
+          created_at: string
+          id: string
+          page_id: string
+          status: string
+          suggestion_type: string
+        }
+        Insert: {
+          applied_at?: string | null
+          content: string
+          created_at?: string
+          id?: string
+          page_id: string
+          status?: string
+          suggestion_type: string
+        }
+        Update: {
+          applied_at?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          page_id?: string
+          status?: string
+          suggestion_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_suggestions_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "landing_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      keywords: {
+        Row: {
+          cpc: number | null
+          created_at: string
+          id: string
+          keyword: string
+          page_id: string
+          performance_score: number | null
+          updated_at: string
+          volume: number | null
+        }
+        Insert: {
+          cpc?: number | null
+          created_at?: string
+          id?: string
+          keyword: string
+          page_id: string
+          performance_score?: number | null
+          updated_at?: string
+          volume?: number | null
+        }
+        Update: {
+          cpc?: number | null
+          created_at?: string
+          id?: string
+          keyword?: string
+          page_id?: string
+          performance_score?: number | null
+          updated_at?: string
+          volume?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "keywords_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "landing_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      landing_pages: {
+        Row: {
+          audience: string
+          campaign_type: string
+          created_at: string
+          html_content: string | null
+          id: string
+          industry: string
+          initial_keywords: string[]
+          published_at: string | null
+          published_url: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          audience: string
+          campaign_type: string
+          created_at?: string
+          html_content?: string | null
+          id?: string
+          industry: string
+          initial_keywords: string[]
+          published_at?: string | null
+          published_url?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          audience?: string
+          campaign_type?: string
+          created_at?: string
+          html_content?: string | null
+          id?: string
+          industry?: string
+          initial_keywords?: string[]
+          published_at?: string | null
+          published_url?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      media: {
+        Row: {
+          associated_page_id: string | null
+          created_at: string
+          filename: string
+          id: string
+          mime_type: string
+          size: number
+          url: string
+          user_id: string
+        }
+        Insert: {
+          associated_page_id?: string | null
+          created_at?: string
+          filename: string
+          id?: string
+          mime_type: string
+          size: number
+          url: string
+          user_id: string
+        }
+        Update: {
+          associated_page_id?: string | null
+          created_at?: string
+          filename?: string
+          id?: string
+          mime_type?: string
+          size?: number
+          url?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_associated_page_id_fkey"
+            columns: ["associated_page_id"]
+            isOneToOne: false
+            referencedRelation: "landing_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      page_metrics: {
+        Row: {
+          avg_time: number
+          bounce_rate: number
+          clicks: number
+          created_at: string
+          date: string
+          id: string
+          page_id: string
+          scroll_depth: number
+          visitors: number
+        }
+        Insert: {
+          avg_time?: number
+          bounce_rate?: number
+          clicks?: number
+          created_at?: string
+          date?: string
+          id?: string
+          page_id: string
+          scroll_depth?: number
+          visitors?: number
+        }
+        Update: {
+          avg_time?: number
+          bounce_rate?: number
+          clicks?: number
+          created_at?: string
+          date?: string
+          id?: string
+          page_id?: string
+          scroll_depth?: number
+          visitors?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "page_metrics_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "landing_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          full_name: string | null
+          id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          full_name?: string | null
+          id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          full_name?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
