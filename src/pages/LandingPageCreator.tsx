@@ -135,17 +135,16 @@ const LandingPageCreator = () => {
       if (data && data[0]) {
         const pageId = data[0].id;
         
-        const keywordPromises = keywordsArray.map(keyword => 
-          supabase.from('keywords').insert([{
+        // Process each keyword individually to avoid array insert issues
+        for (const keyword of keywordsArray) {
+          await supabase.from('keywords').insert({
             page_id: pageId,
             keyword: keyword,
-            // Dummy data for now
+            // Dummy data for now - convert string to number
             volume: Math.floor(Math.random() * 5000),
-            cpc: (Math.random() * 5).toFixed(2)
-          }])
-        );
-        
-        await Promise.all(keywordPromises);
+            cpc: parseFloat((Math.random() * 5).toFixed(2))
+          });
+        }
         
         toast.success("Landing page created successfully!");
         navigate(`/pages/${pageId}/edit`);
@@ -357,6 +356,64 @@ const LandingPageCreator = () => {
       </div>
     </Layout>
   );
+};
+
+const generateSampleHtml = (title: string, audience: string, mainKeyword: string) => {
+  return `
+    <!DOCTYPE html>
+    <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${title}</title>
+        <style>
+          body { font-family: system-ui, sans-serif; line-height: 1.5; margin: 0; color: #333; }
+          .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+          header { padding: 80px 0; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; text-align: center; }
+          h1 { font-size: 2.5rem; margin-bottom: 1rem; }
+          .subheader { font-size: 1.25rem; max-width: 800px; margin: 0 auto 2rem; }
+          .cta-button { background: #f59e0b; color: white; border: none; padding: 12px 24px; font-size: 1rem; border-radius: 4px; cursor: pointer; font-weight: 600; }
+          section { padding: 60px 0; }
+          .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; margin-top: 40px; }
+          .feature { padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+          .feature h3 { margin-top: 0; }
+        </style>
+      </head>
+      <body>
+        <header>
+          <div class="container">
+            <h1>${title}</h1>
+            <p class="subheader">Perfect solution for ${audience} looking for ${mainKeyword}</p>
+            <button class="cta-button">Get Started Now</button>
+          </div>
+        </header>
+        <section>
+          <div class="container">
+            <h2>Why Choose Us</h2>
+            <div class="features">
+              <div class="feature">
+                <h3>Feature 1</h3>
+                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla facilisi.</p>
+              </div>
+              <div class="feature">
+                <h3>Feature 2</h3>
+                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla facilisi.</p>
+              </div>
+              <div class="feature">
+                <h3>Feature 3</h3>
+                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla facilisi.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+        <footer>
+          <div class="container" style="text-align: center; padding: 20px; color: #666;">
+            &copy; ${new Date().getFullYear()} ${title}. All rights reserved.
+          </div>
+        </footer>
+      </body>
+    </html>
+  `;
 };
 
 export default LandingPageCreator;

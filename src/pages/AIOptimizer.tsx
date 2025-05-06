@@ -30,6 +30,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 
 interface PageInfo {
   id: string;
@@ -112,7 +113,13 @@ const AIOptimizer = () => {
           throw suggestionsError;
         }
         
-        setSuggestions(suggestionsData || []);
+        // Convert status to proper type for AISuggestion
+        const typedSuggestions = (suggestionsData || []).map(suggestion => ({
+          ...suggestion,
+          status: suggestion.status as "pending" | "applied" | "rejected"
+        }));
+        
+        setSuggestions(typedSuggestions);
       } catch (error: any) {
         toast.error(`Error loading data: ${error.message}`);
         navigate('/pages');
@@ -148,7 +155,13 @@ const AIOptimizer = () => {
       }
       
       if (data) {
-        setSuggestions((prev) => [...data, ...prev]);
+        // Convert status to proper type for AISuggestion
+        const typedData = data.map(item => ({
+          ...item,
+          status: item.status as "pending" | "applied" | "rejected"
+        }));
+        
+        setSuggestions((prev) => [...typedData, ...prev]);
         toast.success("Generated new AI suggestions!");
       }
     } catch (error: any) {
@@ -179,7 +192,7 @@ const AIOptimizer = () => {
       setSuggestions((prev) =>
         prev.map((s) =>
           s.id === suggestionId
-            ? { ...s, status: 'applied', applied_at: new Date().toISOString() }
+            ? { ...s, status: 'applied' as const, applied_at: new Date().toISOString() }
             : s
         )
       );
@@ -209,7 +222,7 @@ const AIOptimizer = () => {
       // Update local state
       setSuggestions((prev) =>
         prev.map((s) =>
-          s.id === suggestionId ? { ...s, status: 'rejected' } : s
+          s.id === suggestionId ? { ...s, status: 'rejected' as const } : s
         )
       );
       
