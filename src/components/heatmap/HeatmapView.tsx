@@ -16,6 +16,7 @@ interface HeatmapViewProps {
   className?: string;
   imageSrc?: string;
   deviceType?: "desktop" | "mobile";
+  loading?: boolean;
 }
 
 export function HeatmapView({
@@ -25,10 +26,11 @@ export function HeatmapView({
   className,
   imageSrc,
   deviceType = "desktop",
+  loading = false,
 }: HeatmapViewProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [isImageLoading, setIsImageLoading] = useState(true);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
 
   useEffect(() => {
@@ -37,15 +39,15 @@ export function HeatmapView({
       img.src = imageSrc;
       img.onload = () => {
         setImage(img);
-        setLoading(false);
+        setIsImageLoading(false);
       };
     } else {
-      setLoading(false);
+      setIsImageLoading(false);
     }
   }, [imageSrc]);
 
   useEffect(() => {
-    if (loading || !canvasRef.current) return;
+    if ((isImageLoading || loading) || !canvasRef.current) return;
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
@@ -85,7 +87,7 @@ export function HeatmapView({
       ctx.fillStyle = gradient;
       ctx.fill();
     });
-  }, [data, loading, image, width, height]);
+  }, [data, isImageLoading, loading, image, width, height]);
 
   return (
     <Card className={className}>
@@ -100,7 +102,7 @@ export function HeatmapView({
             deviceType === "mobile" ? "max-w-[375px] mx-auto" : "w-full"
           )}
         >
-          {loading ? (
+          {loading || isImageLoading ? (
             <div className="w-full h-[600px] bg-muted animate-pulse" />
           ) : (
             <canvas
