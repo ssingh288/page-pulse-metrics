@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { Loader2 } from "lucide-react";
+import { Loader2, RefreshCw, Palette, FileText } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -34,9 +34,16 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
+import { generateLandingPageContent, generateEnhancedHtml } from "@/utils/landingPageGenerator";
 
 const INDUSTRY_OPTIONS = [
   "E-commerce",
@@ -81,6 +88,11 @@ const formSchema = z.object({
 
 const LandingPageCreator = () => {
   const [generatingPage, setGeneratingPage] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState("");
+  const [activeTab, setActiveTab] = useState("form");
+  const [generatedContent, setGeneratedContent] = useState<any>(null);
+  const [selectedThemeIndex, setSelectedThemeIndex] = useState(0);
+  const [themeOptions, setThemeOptions] = useState<any[]>([]);
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -110,20 +122,68 @@ const LandingPageCreator = () => {
         .map(keyword => keyword.trim())
         .filter(keyword => keyword.length > 0);
 
-      // Create sample HTML content
-      const sampleHtml = generateSampleHtml(values.title, values.audience, keywordsArray[0] || "");
+      // Generate enhanced content using our new utility
+      const { content, themeOptions } = generateLandingPageContent(
+        values.title, 
+        values.audience, 
+        values.industry, 
+        values.campaign_type,
+        keywordsArray
+      );
+      
+      // Store the generated content and theme options
+      setGeneratedContent(content);
+      setThemeOptions(themeOptions);
+      
+      // Generate HTML with the first theme option
+      const enhancedHtml = generateEnhancedHtml(
+        values.title,
+        values.audience,
+        keywordsArray,
+        themeOptions[0],
+        content
+      );
+      
+      // Show preview of the generated page
+      setPreviewHtml(enhancedHtml);
+      setActiveTab("preview");
+
+    } catch (error: any) {
+      toast.error(`Error generating page: ${error.message}`);
+    } finally {
+      setGeneratingPage(false);
+    }
+  };
+
+  const handleSavePage = async () => {
+    try {
+      if (!user || !generatedContent || !previewHtml) {
+        toast.error("Missing required data to save page");
+        return;
+      }
+
+      setGeneratingPage(true);
+
+      // Process keywords into an array
+      const keywordsArray = form.getValues("keywords")
+        .split(",")
+        .map(keyword => keyword.trim())
+        .filter(keyword => keyword.length > 0);
+
+      // Add suggested keywords
+      const allKeywords = [...keywordsArray, ...generatedContent.keywordSuggestions];
 
       // Save to Supabase
       const { data, error } = await supabase
         .from('landing_pages')
         .insert([{
           user_id: user.id,
-          title: values.title,
-          campaign_type: values.campaign_type,
-          industry: values.industry,
-          audience: values.audience,
-          initial_keywords: keywordsArray,
-          html_content: sampleHtml
+          title: form.getValues("title"),
+          campaign_type: form.getValues("campaign_type"),
+          industry: form.getValues("industry"),
+          audience: form.getValues("audience"),
+          initial_keywords: allKeywords,
+          html_content: previewHtml
         }])
         .select();
 
@@ -136,7 +196,7 @@ const LandingPageCreator = () => {
         const pageId = data[0].id;
         
         // Process each keyword individually to avoid array insert issues
-        for (const keyword of keywordsArray) {
+        for (const keyword of allKeywords) {
           await supabase.from('keywords').insert({
             page_id: pageId,
             keyword: keyword,
@@ -150,270 +210,293 @@ const LandingPageCreator = () => {
         navigate(`/pages/${pageId}/edit`);
       }
     } catch (error: any) {
-      toast.error(`Error creating page: ${error.message}`);
+      toast.error(`Error saving page: ${error.message}`);
     } finally {
       setGeneratingPage(false);
     }
   };
 
-  const generateSampleHtml = (title: string, audience: string, mainKeyword: string) => {
-    return `
-      <!DOCTYPE html>
-      <html lang="en">
-        <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>${title}</title>
-          <style>
-            body { font-family: system-ui, sans-serif; line-height: 1.5; margin: 0; color: #333; }
-            .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
-            header { padding: 80px 0; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; text-align: center; }
-            h1 { font-size: 2.5rem; margin-bottom: 1rem; }
-            .subheader { font-size: 1.25rem; max-width: 800px; margin: 0 auto 2rem; }
-            .cta-button { background: #f59e0b; color: white; border: none; padding: 12px 24px; font-size: 1rem; border-radius: 4px; cursor: pointer; font-weight: 600; }
-            section { padding: 60px 0; }
-            .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; margin-top: 40px; }
-            .feature { padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-            .feature h3 { margin-top: 0; }
-          </style>
-        </head>
-        <body>
-          <header>
-            <div class="container">
-              <h1>${title}</h1>
-              <p class="subheader">Perfect solution for ${audience} looking for ${mainKeyword}</p>
-              <button class="cta-button">Get Started Now</button>
-            </div>
-          </header>
-          <section>
-            <div class="container">
-              <h2>Why Choose Us</h2>
-              <div class="features">
-                <div class="feature">
-                  <h3>Feature 1</h3>
-                  <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla facilisi.</p>
-                </div>
-                <div class="feature">
-                  <h3>Feature 2</h3>
-                  <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla facilisi.</p>
-                </div>
-                <div class="feature">
-                  <h3>Feature 3</h3>
-                  <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla facilisi.</p>
-                </div>
-              </div>
-            </div>
-          </section>
-          <footer>
-            <div class="container" style="text-align: center; padding: 20px; color: #666;">
-              &copy; ${new Date().getFullYear()} ${title}. All rights reserved.
-            </div>
-          </footer>
-        </body>
-      </html>
-    `;
+  const regenerateContent = () => {
+    if (!generatedContent || themeOptions.length === 0) return;
+    
+    // Generate HTML with the current theme option but regenerated content
+    const values = form.getValues();
+    const keywordsArray = values.keywords
+      .split(",")
+      .map(keyword => keyword.trim())
+      .filter(keyword => keyword.length > 0);
+    
+    // Generate new content
+    const { content } = generateLandingPageContent(
+      values.title, 
+      values.audience, 
+      values.industry, 
+      values.campaign_type,
+      keywordsArray
+    );
+    
+    setGeneratedContent(content);
+    
+    // Generate HTML with the same theme but new content
+    const enhancedHtml = generateEnhancedHtml(
+      values.title,
+      values.audience,
+      keywordsArray,
+      themeOptions[selectedThemeIndex],
+      content
+    );
+    
+    // Show preview of the regenerated page
+    setPreviewHtml(enhancedHtml);
+  };
+
+  const regenerateTheme = () => {
+    if (!generatedContent || themeOptions.length === 0) return;
+    
+    // Rotate to the next theme option
+    const nextThemeIndex = (selectedThemeIndex + 1) % themeOptions.length;
+    setSelectedThemeIndex(nextThemeIndex);
+    
+    const values = form.getValues();
+    const keywordsArray = values.keywords
+      .split(",")
+      .map(keyword => keyword.trim())
+      .filter(keyword => keyword.length > 0);
+    
+    // Generate HTML with the next theme option but same content
+    const enhancedHtml = generateEnhancedHtml(
+      values.title,
+      values.audience,
+      keywordsArray,
+      themeOptions[nextThemeIndex],
+      generatedContent
+    );
+    
+    // Show preview of the regenerated page
+    setPreviewHtml(enhancedHtml);
   };
 
   return (
     <Layout title="Create Landing Page">
-      <div className="max-w-3xl mx-auto">
-        <Card>
-          <CardHeader>
-            <CardTitle>Create a New Landing Page</CardTitle>
-            <CardDescription>
-              Fill in the details below to generate your AI-optimized landing page
-            </CardDescription>
-          </CardHeader>
+      <div className="max-w-5xl mx-auto">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="form">Page Details</TabsTrigger>
+            <TabsTrigger value="preview" disabled={!previewHtml}>Preview & Save</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="form" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Create a New Landing Page</CardTitle>
+                <CardDescription>
+                  Fill in the details below to generate your AI-optimized landing page
+                </CardDescription>
+              </CardHeader>
 
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSubmit)}>
-              <CardContent className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="title"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Page Title</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g. Summer Sale Landing Page" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="campaign_type"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Campaign Type</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(handleSubmit)}>
+                  <CardContent className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="title"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Page Title</FormLabel>
                           <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select campaign type" />
-                            </SelectTrigger>
+                            <Input placeholder="e.g. Summer Sale Landing Page" {...field} />
                           </FormControl>
-                          <SelectContent>
-                            <SelectGroup>
-                              <SelectLabel>Campaign Types</SelectLabel>
-                              {CAMPAIGN_TYPES.map((type) => (
-                                <SelectItem key={type} value={type}>{type}</SelectItem>
-                              ))}
-                            </SelectGroup>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <FormField
-                    control={form.control}
-                    name="industry"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Industry</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="campaign_type"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Campaign Type</FormLabel>
+                            <Select
+                              onValueChange={field.onChange}
+                              defaultValue={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select campaign type" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectGroup>
+                                  <SelectLabel>Campaign Types</SelectLabel>
+                                  {CAMPAIGN_TYPES.map((type) => (
+                                    <SelectItem key={type} value={type}>{type}</SelectItem>
+                                  ))}
+                                </SelectGroup>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="industry"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Industry</FormLabel>
+                            <Select
+                              onValueChange={field.onChange}
+                              defaultValue={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select industry" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectGroup>
+                                  <SelectLabel>Industries</SelectLabel>
+                                  {INDUSTRY_OPTIONS.map((industry) => (
+                                    <SelectItem key={industry} value={industry}>{industry}</SelectItem>
+                                  ))}
+                                </SelectGroup>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <FormField
+                      control={form.control}
+                      name="audience"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Target Audience</FormLabel>
                           <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select industry" />
-                            </SelectTrigger>
+                            <Textarea 
+                              placeholder="Describe your target audience (e.g. Small business owners aged 30-45 looking for accounting software)"
+                              className="min-h-[100px]"
+                              {...field}
+                            />
                           </FormControl>
-                          <SelectContent>
-                            <SelectGroup>
-                              <SelectLabel>Industries</SelectLabel>
-                              {INDUSTRY_OPTIONS.map((industry) => (
-                                <SelectItem key={industry} value={industry}>{industry}</SelectItem>
-                              ))}
-                            </SelectGroup>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="keywords"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Keywords</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="Enter keywords separated by commas (e.g. digital marketing, SEO, content strategy)"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </CardContent>
+
+                  <CardFooter>
+                    <Button type="submit" disabled={generatingPage} className="w-full">
+                      {generatingPage ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        "Generate Landing Page"
+                      )}
+                    </Button>
+                  </CardFooter>
+                </form>
+              </Form>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="preview" className="space-y-4">
+            {previewHtml && (
+              <>
+                <div className="flex flex-col md:flex-row gap-4 items-center justify-between mb-4">
+                  <h2 className="text-xl font-semibold">Landing Page Preview</h2>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={regenerateContent}
+                      disabled={generatingPage}
+                    >
+                      <FileText className="mr-2 h-4 w-4" />
+                      Regenerate Content
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={regenerateTheme}
+                      disabled={generatingPage}
+                    >
+                      <Palette className="mr-2 h-4 w-4" />
+                      Try Different Design
+                    </Button>
+                    <Button 
+                      size="sm"
+                      onClick={handleSavePage}
+                      disabled={generatingPage}
+                    >
+                      {generatingPage ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                      )}
+                      Save Landing Page
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="border rounded-lg overflow-hidden bg-white">
+                  <iframe
+                    title="Landing Page Preview"
+                    srcDoc={previewHtml}
+                    className="w-full h-[600px] border-0"
                   />
                 </div>
-
-                <FormField
-                  control={form.control}
-                  name="audience"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Target Audience</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          placeholder="Describe your target audience (e.g. Small business owners aged 30-45 looking for accounting software)"
-                          className="min-h-[100px]"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="keywords"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Keywords</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="Enter keywords separated by commas (e.g. digital marketing, SEO, content strategy)"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </CardContent>
-
-              <CardFooter>
-                <Button type="submit" disabled={generatingPage} className="w-full">
-                  {generatingPage ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    "Generate Landing Page"
-                  )}
-                </Button>
-              </CardFooter>
-            </form>
-          </Form>
-        </Card>
+                
+                {generatedContent?.keywordSuggestions && generatedContent.keywordSuggestions.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">AI-Suggested Keywords</CardTitle>
+                      <CardDescription>
+                        Our AI has suggested these additional keywords that might improve your page performance
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex flex-wrap gap-2">
+                        {generatedContent.keywordSuggestions.map((keyword: string, index: number) => (
+                          <div key={index} className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
+                            {keyword}
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
     </Layout>
   );
-};
-
-const generateSampleHtml = (title: string, audience: string, mainKeyword: string) => {
-  return `
-    <!DOCTYPE html>
-    <html lang="en">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>${title}</title>
-        <style>
-          body { font-family: system-ui, sans-serif; line-height: 1.5; margin: 0; color: #333; }
-          .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
-          header { padding: 80px 0; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; text-align: center; }
-          h1 { font-size: 2.5rem; margin-bottom: 1rem; }
-          .subheader { font-size: 1.25rem; max-width: 800px; margin: 0 auto 2rem; }
-          .cta-button { background: #f59e0b; color: white; border: none; padding: 12px 24px; font-size: 1rem; border-radius: 4px; cursor: pointer; font-weight: 600; }
-          section { padding: 60px 0; }
-          .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; margin-top: 40px; }
-          .feature { padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-          .feature h3 { margin-top: 0; }
-        </style>
-      </head>
-      <body>
-        <header>
-          <div class="container">
-            <h1>${title}</h1>
-            <p class="subheader">Perfect solution for ${audience} looking for ${mainKeyword}</p>
-            <button class="cta-button">Get Started Now</button>
-          </div>
-        </header>
-        <section>
-          <div class="container">
-            <h2>Why Choose Us</h2>
-            <div class="features">
-              <div class="feature">
-                <h3>Feature 1</h3>
-                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla facilisi.</p>
-              </div>
-              <div class="feature">
-                <h3>Feature 2</h3>
-                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla facilisi.</p>
-              </div>
-              <div class="feature">
-                <h3>Feature 3</h3>
-                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla facilisi.</p>
-              </div>
-            </div>
-          </div>
-        </section>
-        <footer>
-          <div class="container" style="text-align: center; padding: 20px; color: #666;">
-            &copy; ${new Date().getFullYear()} ${title}. All rights reserved.
-          </div>
-        </footer>
-      </body>
-    </html>
-  `;
 };
 
 export default LandingPageCreator;
