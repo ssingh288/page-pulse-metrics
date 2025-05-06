@@ -5,7 +5,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BarChart, PieChart, LineChart, TreemapChart } from "recharts";
+import { 
+  BarChart, PieChart, LineChart, 
+  Bar, Pie, Line, XAxis, YAxis, 
+  Legend, Cell, Tooltip as RechartsTooltip
+} from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Globe, Users, Monitor, Smartphone, Clock, Calendar } from "lucide-react";
 
@@ -222,7 +226,7 @@ const Audience = () => {
                             return null
                           }}
                         />
-                        <PieChart.Pie
+                        <Pie
                           data={mockCountryData}
                           dataKey="value"
                           nameKey="name"
@@ -379,7 +383,7 @@ const Audience = () => {
                             return null
                           }}
                         />
-                        <PieChart.Pie
+                        <Pie
                           data={mockDeviceData}
                           dataKey="value"
                           nameKey="name"
@@ -389,13 +393,13 @@ const Audience = () => {
                           fill="#8884d8"
                         >
                           {mockDeviceData.map((entry, index) => (
-                            <PieChart.Cell 
+                            <Cell 
                               key={`cell-${index}`} 
                               fill={colorMap[entry.name as keyof typeof colorMap]} 
                             />
                           ))}
-                        </PieChart.Pie>
-                        <PieChart.Legend />
+                        </Pie>
+                        <Legend />
                       </PieChart>
                     </ChartContainer>
                   )}
@@ -413,8 +417,8 @@ const Audience = () => {
                   ) : (
                     <ChartContainer className="h-full" config={chartConfig}>
                       <BarChart data={mockBrowserData}>
-                        <BarChart.XAxis dataKey="name" />
-                        <BarChart.YAxis tickFormatter={(value) => `${value}%`} />
+                        <XAxis dataKey="name" />
+                        <YAxis tickFormatter={(value) => `${value}%`} />
                         <ChartTooltip
                           content={({ active, payload }) => {
                             if (active && payload && payload.length) {
@@ -446,17 +450,17 @@ const Audience = () => {
                             return null
                           }}
                         />
-                        <BarChart.Bar 
+                        <Bar 
                           dataKey="value" 
                           radius={[4, 4, 0, 0]}
                         >
                           {mockBrowserData.map((entry, index) => (
-                            <BarChart.Cell 
+                            <Cell 
                               key={`cell-${index}`} 
                               fill={colorMap[entry.name as keyof typeof colorMap] || colorMap.Other} 
                             />
                           ))}
-                        </BarChart.Bar>
+                        </Bar>
                       </BarChart>
                     </ChartContainer>
                   )}
@@ -557,11 +561,11 @@ const Audience = () => {
                   ) : (
                     <ChartContainer className="h-full" config={chartConfig}>
                       <LineChart data={mockTimeData}>
-                        <LineChart.XAxis 
+                        <XAxis 
                           dataKey="hour"
                           tickFormatter={(value) => `${value}:00`}
                         />
-                        <LineChart.YAxis />
+                        <YAxis />
                         <ChartTooltip
                           content={({ active, payload }) => {
                             if (active && payload && payload.length) {
@@ -583,7 +587,7 @@ const Audience = () => {
                             return null
                           }}
                         />
-                        <LineChart.Line 
+                        <Line 
                           type="monotone" 
                           dataKey="visits" 
                           stroke="#3b82f6" 
@@ -607,8 +611,8 @@ const Audience = () => {
                   ) : (
                     <ChartContainer className="h-full" config={chartConfig}>
                       <BarChart data={mockSessionData}>
-                        <BarChart.XAxis dataKey="name" />
-                        <BarChart.YAxis tickFormatter={(value) => `${value}%`} />
+                        <XAxis dataKey="name" />
+                        <YAxis tickFormatter={(value) => `${value}%`} />
                         <ChartTooltip
                           content={({ active, payload }) => {
                             if (active && payload && payload.length) {
@@ -640,7 +644,7 @@ const Audience = () => {
                             return null
                           }}
                         />
-                        <BarChart.Bar 
+                        <Bar 
                           dataKey="value" 
                           fill="#a855f7"
                           radius={[4, 4, 0, 0]}

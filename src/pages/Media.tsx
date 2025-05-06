@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -423,7 +422,7 @@ const Media = () => {
                         <TableCell className="pr-0">
                           <Button 
                             variant="ghost" 
-                            size="icon-sm" 
+                            size="sm" 
                             onClick={() => toggleSelection(item.id)}
                           >
                             <FileTypeIcon type={item.type} />
@@ -439,7 +438,7 @@ const Media = () => {
                           <div className="flex items-center gap-1">
                             <Button 
                               variant="ghost" 
-                              size="icon-sm" 
+                              size="sm" 
                               onClick={() => handlePreview(item)}
                             >
                               <Eye className="h-4 w-4" />
@@ -447,7 +446,7 @@ const Media = () => {
                             
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon-sm">
+                                <Button variant="ghost" size="sm">
                                   <MoreVertical className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>
