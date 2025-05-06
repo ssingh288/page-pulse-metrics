@@ -1,4 +1,3 @@
-
 // This utility generates more intelligent landing page content using keyword analysis and industry knowledge
 
 type ContentBlock = {
@@ -363,7 +362,7 @@ export const generateEnhancedHtml = (
       return `
         body { font-family: 'Inter', system-ui, sans-serif; line-height: 1.5; margin: 0; color: ${colors.text}; background: ${colors.background}; }
         .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
-        header { padding: 100px 0 80px; ${theme.style === 'gradient' ? `background: ${colors.background};` : `background-color: ${colors.background};`} color: ${colors.text}; text-align: center; }
+        header { padding: 100px 0 80px; background-color: ${colors.background}; color: ${colors.text}; text-align: center; }
         h1 { font-size: 3rem; font-weight: 800; margin-bottom: 1rem; color: ${colors.primary}; }
         .subheader { font-size: 1.5rem; max-width: 800px; margin: 0 auto 2rem; color: ${colors.secondary}; }
         .cta-button { background: ${colors.primary}; color: white; border: none; padding: 16px 32px; font-size: 1.125rem; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
@@ -584,72 +583,4 @@ export const generateEnhancedHtml = (
               </div>
             </div>
             
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 60px; align-items: center;">
-              <div>
-                <h2 class="section-title" style="text-align: left;">Don't Miss Out</h2>
-                ${content.paragraphs.slice(2).map(p => `<p>${p}</p>`).join('')}
-                <button class="cta-button" style="margin-top: 20px;">${content.cta}</button>
-              </div>
-              <div>
-                <h2 class="section-title" style="text-align: left;">Testimonials</h2>
-                <div class="testimonials" style="grid-template-columns: 1fr;">
-                  ${content.testimonials.map(testimonial => `
-                    <div class="testimonial">
-                      <p>${testimonial}</p>
-                    </div>
-                  `).join('')}
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-      `;
-    }
-  };
-  
-  // Combine it all into HTML
-  return `
-    <!DOCTYPE html>
-    <html lang="en">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>${title}</title>
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Montserrat:wght@400;600;700;800&family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
-        <style>
-          ${generateCss()}
-          
-          /* Responsive styles */
-          @media (max-width: 768px) {
-            h1 { font-size: 2.5rem; }
-            .subheader { font-size: 1.25rem; }
-            section { padding: 60px 0; }
-            .container > div { grid-template-columns: 1fr !important; }
-            .features { margin-top: 40px; }
-          }
-          
-          /* Button for regeneration (hidden in actual landing page) */
-          .regenerate-controls {
-            display: none;
-          }
-        </style>
-      </head>
-      <body>
-        ${generateLayout()}
-        
-        <footer>
-          <div class="container" style="text-align: center; padding: 30px 0; color: #666;">
-            &copy; ${new Date().getFullYear()} ${title}. All rights reserved.
-          </div>
-        </footer>
-      </body>
-    </html>
-  `;
-};
-
-export default {
-  generateLandingPageContent,
-  generateEnhancedHtml
-};
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 60px;
