@@ -3,3 +3,6 @@ project_id = "emffdnkdbtpyiiaddyqw"
 
 [functions.generate-ai-content]
 verify_jwt = true
+
+[functions.generate-ai-marketing]
+verify_jwt = true

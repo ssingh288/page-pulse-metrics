@@ -44,3 +44,37 @@ export const generateOptimizedContent = async (
 
   return generateAiSuggestions(promptMap[elementType]);
 };
+
+/**
+ * Marketing optimization parameters
+ */
+interface MarketingOptimizationParams {
+  landingPageUrl: string;
+  audienceType: string;
+  industry: string;
+  tone: string;
+}
+
+/**
+ * Generates comprehensive marketing optimizations for a landing page
+ * @param params Marketing optimization parameters
+ * @returns Promise containing the marketing optimization suggestions
+ */
+export const generateMarketingOptimizations = async (
+  params: MarketingOptimizationParams
+): Promise<string> => {
+  try {
+    const { data, error } = await supabase.functions.invoke('generate-ai-marketing', {
+      body: params
+    });
+
+    if (error) throw new Error(error.message);
+    if (!data || !data.result) throw new Error('No marketing suggestions received');
+    
+    return data.result;
+  } catch (error) {
+    console.error('Error generating marketing optimizations:', error);
+    toast.error('Failed to generate marketing optimizations');
+    return 'Unable to generate marketing suggestions at this time. Please try again later.';
+  }
+};
