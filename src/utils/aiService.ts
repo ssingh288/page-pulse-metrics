@@ -19,8 +19,10 @@ export const generateAiSuggestions = async (prompt: string): Promise<string> => 
     return data.result;
   } catch (error) {
     console.error('Error generating AI suggestions:', error);
-    toast.error('Failed to generate AI suggestions');
-    return 'Unable to generate suggestions at this time. Please try again later.';
+    toast.error('Failed to generate AI suggestions. Please check your OpenAI API key setup.');
+    
+    // Return fallback content with explanation about OpenAI API key
+    return `**AI Optimization Suggestions (Sample)**\n\n⚠️ **Note:** These are sample suggestions. To get real AI-powered suggestions, please:\n\n1. Visit [OpenAI Platform](https://platform.openai.com/account/billing/overview)\n2. Add a payment method to your account\n3. Ensure your API key has sufficient credits\n\n---\n\n### Headline Improvements:\n- Make your headline more specific: "Increase Your Conversion Rate by 27% in 30 Days"\n- Add social proof: "Join 10,000+ Businesses That Boosted Sales with Our Solution"\n- Create urgency: "Limited Time Offer: Transform Your Marketing Results Today"\n\n### Call-to-Action Optimization:\n- Replace generic button text like "Submit" with action-oriented text: "Start My Free Trial"\n- Add benefit-driven microcopy below CTA buttons: "No credit card required"\n- Test button colors that create more contrast with surrounding elements\n\n### Content Enhancement:\n- Break up long paragraphs into shorter, more digestible chunks\n- Add bullet points to highlight key benefits and features\n- Incorporate customer testimonials closer to decision points\n\n### SEO Recommendations:\n- Focus on these high-intent keywords: "affordable marketing automation", "best lead generation tools", "marketing ROI calculator"\n- Improve meta description to include primary keywords and a clear value proposition\n- Add schema markup for better rich snippet opportunities\n\n### A/B Testing Ideas:\n- Test a video explainer against your current hero section\n- Compare a long-form page with a shorter, more focused version\n- Experiment with different social proof formats (logos vs. testimonials vs. case study statistics)`;
   }
 };
 
