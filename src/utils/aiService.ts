@@ -2,6 +2,74 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+// Types for structured responses
+export interface PageOptimizationSuggestion {
+  headline?: {
+    original: string;
+    suggested: string;
+    reason: string;
+  };
+  cta?: {
+    original: string;
+    suggested: string;
+    reason: string;
+  };
+  content?: Array<{
+    section: string;
+    original: string;
+    suggested: string;
+    reason: string;
+  }>;
+  keywords?: Array<{
+    keyword: string;
+    relevance: "high" | "medium" | "low";
+    trafficPotential: number;
+    difficulty: number;
+  }>;
+  structure?: Array<{
+    suggestion: string;
+    reason: string;
+  }>;
+  trafficEstimate?: {
+    current: string;
+    potential: string;
+    confidence: "high" | "medium" | "low";
+  };
+}
+
+export interface AdSuggestion {
+  facebook?: Array<{
+    headline: string;
+    description: string;
+    cta: string;
+    imagePrompt: string;
+  }>;
+  instagram?: Array<{
+    caption: string;
+    cta: string;
+    imagePrompt: string;
+  }>;
+  linkedin?: Array<{
+    headline: string;
+    description: string;
+    cta: string;
+    imagePrompt: string;
+  }>;
+  twitter?: Array<{
+    text: string;
+    cta: string;
+    imagePrompt: string;
+  }>;
+  google?: Array<{
+    headline1: string;
+    headline2: string;
+    headline3: string;
+    description1: string;
+    description2: string;
+    imagePrompt: string;
+  }>;
+}
+
 /**
  * Generates AI content suggestions for landing page optimization
  * @param prompt The user's prompt or landing page content to analyze
@@ -10,7 +78,7 @@ import { toast } from "sonner";
 export const generateAiSuggestions = async (prompt: string): Promise<string> => {
   try {
     const { data, error } = await supabase.functions.invoke('generate-ai-content', {
-      body: { prompt }
+      body: { prompt, mode: "general" }
     });
 
     if (error) throw new Error(error.message);
@@ -46,3 +114,219 @@ export const generateOptimizedContent = async (
 
   return generateAiSuggestions(promptMap[elementType]);
 };
+
+/**
+ * Generates structured optimization suggestions for a landing page
+ * @param pageContent The HTML content of the landing page
+ * @param pageInfo Additional information about the page (title, audience, etc.)
+ * @returns Promise containing structured optimization suggestions
+ */
+export const generatePageOptimizations = async (
+  pageContent: string,
+  pageInfo: {
+    title: string;
+    audience: string;
+    industry: string;
+    campaign_type: string;
+    keywords: string[];
+  }
+): Promise<PageOptimizationSuggestion> => {
+  try {
+    const prompt = `
+    I need optimization suggestions for this landing page:
+
+    Title: ${pageInfo.title}
+    Target Audience: ${pageInfo.audience}
+    Industry: ${pageInfo.industry}
+    Campaign Type: ${pageInfo.campaign_type}
+    Keywords: ${pageInfo.keywords.join(', ')}
+    
+    Page Content:
+    ${pageContent}
+    
+    Please provide detailed optimization suggestions to improve conversion rates, user engagement, and SEO performance.
+    `;
+
+    const { data, error } = await supabase.functions.invoke('generate-ai-content', {
+      body: { prompt, mode: "page_optimization" }
+    });
+
+    if (error) throw new Error(error.message);
+    if (!data || !data.result) throw new Error('No optimization data received');
+    
+    return data.result as PageOptimizationSuggestion;
+  } catch (error) {
+    console.error('Error generating page optimizations:', error);
+    toast.error('Failed to generate page optimizations. Please check your OpenAI API key setup.');
+    
+    // Return fallback sample data
+    return {
+      headline: { 
+        original: "Your original headline", 
+        suggested: "Boost Your Conversion Rate by 250% With Our Proven Strategy", 
+        reason: "More specific, includes a metric to build credibility" 
+      },
+      cta: { 
+        original: "Submit", 
+        suggested: "Start My Free Trial", 
+        reason: "Action-oriented, personal, and emphasizes the free aspect" 
+      },
+      content: [
+        { 
+          section: "Hero section", 
+          original: "Your current content", 
+          suggested: "Join 10,000+ businesses that increased their conversion rates using our platform", 
+          reason: "Adds social proof and specific benefits" 
+        }
+      ],
+      keywords: [
+        { keyword: "conversion rate optimization", relevance: "high", trafficPotential: 85, difficulty: 43 },
+        { keyword: "landing page optimization", relevance: "high", trafficPotential: 72, difficulty: 38 },
+        { keyword: "improve website conversions", relevance: "medium", trafficPotential: 65, difficulty: 30 }
+      ],
+      structure: [
+        { suggestion: "Move testimonials above the fold", reason: "Social proof early in the user journey increases trust" },
+        { suggestion: "Add progress indicators to forms", reason: "Reduces form abandonment by 28%" }
+      ],
+      trafficEstimate: { current: "2.5%", potential: "8.7%", confidence: "medium" }
+    };
+  }
+};
+
+/**
+ * Generates platform-specific ad suggestions based on landing page content
+ * @param pageContent The HTML content of the landing page
+ * @param pageInfo Additional information about the page
+ * @returns Promise containing structured ad suggestions for different platforms
+ */
+export const generateAdSuggestions = async (
+  pageContent: string,
+  pageInfo: {
+    title: string;
+    audience: string;
+    industry: string;
+    campaign_type: string;
+    keywords: string[];
+  }
+): Promise<AdSuggestion> => {
+  try {
+    const prompt = `
+    Create platform-specific ad variations for this landing page:
+
+    Title: ${pageInfo.title}
+    Target Audience: ${pageInfo.audience}
+    Industry: ${pageInfo.industry}
+    Campaign Type: ${pageInfo.campaign_type}
+    Keywords: ${pageInfo.keywords.join(', ')}
+    
+    Page Content:
+    ${pageContent}
+    
+    Please create optimal ad content for Facebook, Instagram, LinkedIn, Twitter and Google ads.
+    `;
+
+    const { data, error } = await supabase.functions.invoke('generate-ai-content', {
+      body: { prompt, mode: "ad_generation" }
+    });
+
+    if (error) throw new Error(error.message);
+    if (!data || !data.result) throw new Error('No ad data received');
+    
+    return data.result as AdSuggestion;
+  } catch (error) {
+    console.error('Error generating ad suggestions:', error);
+    toast.error('Failed to generate ad suggestions. Please check your OpenAI API key setup.');
+    
+    // Return fallback sample data
+    return {
+      facebook: [
+        {
+          headline: "Double Your Conversions in 30 Days",
+          description: "Our proven strategy has helped 10,000+ businesses increase their conversion rates. Try it free for 14 days!",
+          cta: "Start Free Trial",
+          imagePrompt: "Professional showing increased conversion metrics on a dashboard with a clear upward trend"
+        }
+      ],
+      instagram: [
+        {
+          caption: "Transform your business results with our conversion optimization platform! 📈 #ConversionRate #MarketingTips #GrowthHacking",
+          cta: "Learn More",
+          imagePrompt: "Stylish, minimal design showing before/after conversion metrics with vibrant colors"
+        }
+      ],
+      linkedin: [
+        {
+          headline: "Increase Your ROI with Data-Driven Conversion Optimization",
+          description: "Join industry leaders who've seen an average 250% increase in conversion rates using our enterprise platform.",
+          cta: "Request Demo",
+          imagePrompt: "Professional business setting with analytics dashboard showing improved metrics"
+        }
+      ],
+      twitter: [
+        {
+          text: "Stop guessing what works. Our platform increased conversion rates by an average of 250% for 10,000+ businesses. See how:",
+          cta: "Learn More",
+          imagePrompt: "Simple chart showing dramatic conversion improvement with brand colors"
+        }
+      ],
+      google: [
+        {
+          headline1: "Boost Conversion Rates 250%",
+          headline2: "Data-Driven Optimization",
+          headline3: "Start Free 14-Day Trial",
+          description1: "Join 10,000+ businesses using our proven platform to increase their website conversions.",
+          description2: "No credit card required. See results in your first week or your money back.",
+          imagePrompt: "Clean, professional banner showing conversion improvement metrics"
+        }
+      ]
+    };
+  }
+};
+
+/**
+ * Applies AI suggestions to HTML content
+ * @param htmlContent Current HTML content
+ * @param suggestions Optimization suggestions to apply
+ * @returns Updated HTML content with suggestions applied
+ */
+export const applyOptimizationsToHTML = (
+  htmlContent: string,
+  suggestions: PageOptimizationSuggestion
+): string => {
+  let updatedHTML = htmlContent;
+  
+  // Apply headline changes if available
+  if (suggestions.headline && suggestions.headline.original && suggestions.headline.suggested) {
+    updatedHTML = updatedHTML.replace(
+      new RegExp(escapeRegExp(suggestions.headline.original), 'g'),
+      suggestions.headline.suggested
+    );
+  }
+  
+  // Apply CTA changes if available
+  if (suggestions.cta && suggestions.cta.original && suggestions.cta.suggested) {
+    updatedHTML = updatedHTML.replace(
+      new RegExp(escapeRegExp(suggestions.cta.original), 'g'),
+      suggestions.cta.suggested
+    );
+  }
+  
+  // Apply content changes if available
+  if (suggestions.content && suggestions.content.length > 0) {
+    suggestions.content.forEach(contentChange => {
+      if (contentChange.original && contentChange.suggested) {
+        updatedHTML = updatedHTML.replace(
+          new RegExp(escapeRegExp(contentChange.original), 'g'),
+          contentChange.suggested
+        );
+      }
+    });
+  }
+  
+  return updatedHTML;
+};
+
+// Helper function to escape special characters in strings for use in RegExp
+function escapeRegExp(string: string): string {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
