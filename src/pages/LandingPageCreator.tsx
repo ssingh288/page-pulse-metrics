@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { Loader2, RefreshCw, Palette, FileText } from "lucide-react";
+import { Loader2, RefreshCw, Palette, FileText, Sparkles } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -44,6 +44,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { generateLandingPageContent, generateEnhancedHtml } from "@/utils/landingPageGenerator";
+import { generateAiSuggestions } from "@/utils/aiService";
 
 const INDUSTRY_OPTIONS = [
   "E-commerce",
@@ -95,6 +96,10 @@ const LandingPageCreator = () => {
   const [themeOptions, setThemeOptions] = useState<any[]>([]);
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [optimizing, setOptimizing] = useState(false);
+  const [optimizationPrompt, setOptimizationPrompt] = useState("");
+  const [optimizationResult, setOptimizationResult] = useState("");
+  const [showOptimizer, setShowOptimizer] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -276,6 +281,55 @@ const LandingPageCreator = () => {
     setPreviewHtml(enhancedHtml);
   };
 
+  const handleOptimizePage = async () => {
+    try {
+      setOptimizing(true);
+      
+      // Create a prompt based on current page content and form data
+      const values = form.getValues();
+      const prompt = `Optimize this landing page for conversions and SEO:
+Title: ${values.title}
+Target Audience: ${values.audience}
+Industry: ${values.industry}
+Campaign Type: ${values.campaign_type}
+Keywords: ${values.keywords}
+
+Please provide comprehensive optimization recommendations in these areas:
+1. Headlines and copywriting improvements
+2. Call-to-action button text and placement
+3. SEO keyword optimization
+4. Layout and user flow improvements
+5. Additional keywords to target
+6. A/B testing recommendations
+
+Current landing page structure: [Preview currently shown to user]`;
+
+      // Generate AI suggestions using our utility
+      const suggestions = await generateAiSuggestions(prompt);
+      
+      setOptimizationResult(suggestions);
+      
+    } catch (error: any) {
+      toast.error(`Error optimizing page: ${error.message}`);
+      setOptimizationResult("Unable to generate optimization suggestions at this time. Please try again later.");
+    } finally {
+      setOptimizing(false);
+    }
+  };
+
+  const handleOptimizationPromptChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setOptimizationPrompt(e.target.value);
+  };
+
+  const toggleOptimizer = () => {
+    setShowOptimizer(!showOptimizer);
+    if (!showOptimizer) {
+      // Pre-populate the optimization prompt with some context
+      const values = form.getValues();
+      setOptimizationPrompt(`Please optimize this ${values.campaign_type} landing page for the ${values.industry} industry targeting ${values.audience}.`);
+    }
+  };
+
   return (
     <Layout title="Create Landing Page">
       <div className="max-w-5xl mx-auto">
@@ -448,6 +502,15 @@ const LandingPageCreator = () => {
                       <Palette className="mr-2 h-4 w-4" />
                       Try Different Design
                     </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={toggleOptimizer}
+                      disabled={generatingPage || optimizing}
+                    >
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      AI Optimizer
+                    </Button>
                     <Button 
                       size="sm"
                       onClick={handleSavePage}
@@ -462,6 +525,77 @@ const LandingPageCreator = () => {
                     </Button>
                   </div>
                 </div>
+                
+                {showOptimizer && (
+                  <Card className="mb-4">
+                    <CardHeader>
+                      <CardTitle className="flex items-center">
+                        <Sparkles className="mr-2 h-5 w-5 text-primary" />
+                        AI Page Optimizer
+                      </CardTitle>
+                      <CardDescription>
+                        Get AI-powered suggestions to improve your landing page performance
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {!optimizationResult ? (
+                        <div>
+                          <label className="block text-sm font-medium mb-1">
+                            Additional optimization instructions (optional):
+                          </label>
+                          <Textarea
+                            value={optimizationPrompt}
+                            onChange={handleOptimizationPromptChange}
+                            placeholder="E.g., Focus on improving headline engagement, suggest better CTA wording, etc."
+                            className="mb-4"
+                          />
+                          <Button
+                            onClick={handleOptimizePage}
+                            disabled={optimizing}
+                            className="w-full"
+                          >
+                            {optimizing ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Generating Optimization Suggestions...
+                              </>
+                            ) : (
+                              <>
+                                <Sparkles className="mr-2 h-4 w-4" />
+                                Generate Optimization Suggestions
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          <div className="rounded-md border p-4 bg-muted/30">
+                            <pre className="whitespace-pre-wrap text-sm">{optimizationResult}</pre>
+                          </div>
+                          <div className="flex justify-between">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setOptimizationResult("");
+                                setOptimizationPrompt("");
+                              }}
+                            >
+                              Clear Results
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => navigator.clipboard.writeText(optimizationResult)}
+                            >
+                              Copy to Clipboard
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
                 
                 <div className="border rounded-lg overflow-hidden bg-white">
                   <iframe

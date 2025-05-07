@@ -37,12 +37,12 @@ serve(async (req) => {
         messages: [
           { 
             role: "system", 
-            content: "You are a landing page optimization assistant. Provide concise, actionable suggestions to improve conversion rates, readability, and user engagement. Focus on headline improvements, call-to-action wording, layout suggestions, and content enhancements." 
+            content: "You are a landing page optimization assistant. Provide concise, actionable suggestions to improve conversion rates, readability, user engagement, SEO, and marketing performance. Focus on headline improvements, call-to-action wording, layout suggestions, content enhancements, keyword optimization, and ad copy recommendations. Be specific and practical." 
           },
           { role: "user", content: prompt }
         ],
         temperature: 0.7,
-        max_tokens: 800,
+        max_tokens: 1500,
       }),
     });
 
