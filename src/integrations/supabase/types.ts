@@ -239,6 +239,27 @@ export type Database = {
         }
         Relationships: []
       }
+      prompts: {
+        Row: {
+          ai_response: string | null
+          created_at: string | null
+          id: string
+          user_input: string
+        }
+        Insert: {
+          ai_response?: string | null
+          created_at?: string | null
+          id: string
+          user_input: string
+        }
+        Update: {
+          ai_response?: string | null
+          created_at?: string | null
+          id?: string
+          user_input?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
