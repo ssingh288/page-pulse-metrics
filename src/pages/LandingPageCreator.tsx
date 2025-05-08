@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
@@ -154,7 +153,7 @@ const LandingPageCreator = () => {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   
   // Form setup
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: "",
@@ -167,11 +166,15 @@ const LandingPageCreator = () => {
 
   // Auto-save draft when form values change
   useEffect(() => {
-    const subscription = form.watch((value) => {
+    // Fix: Use a subscription with a callback that doesn't create circular type issues
+    const subscription = form.watch(() => {
+      // Get current values
+      const currentValues = form.getValues();
+      
       // Only attempt to auto-save if at least the title is set
-      if (value.title && value.title.length >= 3) {
+      if (currentValues.title && currentValues.title.length >= 3) {
         const timer = setTimeout(() => {
-          autoSaveDraft(value as FormValues);
+          autoSaveDraft(currentValues);
         }, 5000); // Wait 5 seconds after changes before saving
         
         return () => clearTimeout(timer);
@@ -179,7 +182,7 @@ const LandingPageCreator = () => {
     });
     
     return () => subscription.unsubscribe();
-  }, [form.watch]);
+  }, [form]);
   
   // Check for existing drafts when component mounts
   useEffect(() => {
@@ -258,7 +261,7 @@ const LandingPageCreator = () => {
     }
   };
 
-  const autoSaveDraft = async (formValues: z.infer<typeof formSchema>) => {
+  const autoSaveDraft = async (formValues: FormValues) => {
     try {
       if (!user) return;
       
@@ -330,7 +333,7 @@ const LandingPageCreator = () => {
     }
   };
 
-  const handleSubmit = async (values: z.infer<typeof formSchema>) => {
+  const handleSubmit = async (values: FormValues) => {
     try {
       if (!user) {
         toast.error("You must be logged in to create a page");
@@ -502,7 +505,7 @@ const LandingPageCreator = () => {
       values.audience,
       keywordsArray,
       themeOptions[selectedThemeIndex],
-      content
+      generatedContent
     );
     
     // Show preview of the regenerated page
