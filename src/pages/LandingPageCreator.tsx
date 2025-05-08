@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +8,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { Loader2, RefreshCw, Palette, FileText, Sparkles } from "lucide-react";
+import { Loader2, RefreshCw, Palette, FileText, Sparkles, Image, Video, Save } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -39,6 +40,14 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -86,6 +95,21 @@ const CAMPAIGN_TYPES = [
   "Other"
 ];
 
+const MEDIA_TYPE_OPTIONS = [
+  "Image",
+  "Video",
+  "Image and Video",
+  "None"
+];
+
+const LAYOUT_OPTIONS = [
+  "Image Top, Content Below",
+  "Content Top, Image Below",
+  "Content Left, Image Right",
+  "Image Left, Content Right",
+  "Full-Width Image Banner"
+];
+
 const LandingPageCreator = () => {
   const [generatingPage, setGeneratingPage] = useState(false);
   const [previewHtml, setPreviewHtml] = useState("");
@@ -96,7 +120,13 @@ const LandingPageCreator = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [showOptimizer, setShowOptimizer] = useState(false);
-
+  const [draftId, setDraftId] = useState<string | null>(null);
+  const [autoSaving, setAutoSaving] = useState(false);
+  const [mediaType, setMediaType] = useState("Image");
+  const [layoutStyle, setLayoutStyle] = useState("Image Top, Content Below");
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  
+  // Form setup
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -107,6 +137,171 @@ const LandingPageCreator = () => {
       keywords: ""
     },
   });
+
+  // Auto-save draft when form values change
+  useEffect(() => {
+    const subscription = form.watch((value) => {
+      // Only attempt to auto-save if at least the title is set
+      if (value.title && value.title.length >= 3) {
+        const timer = setTimeout(() => {
+          autoSaveDraft(value as z.infer<typeof formSchema>);
+        }, 5000); // Wait 5 seconds after changes before saving
+        
+        return () => clearTimeout(timer);
+      }
+    });
+    
+    return () => subscription.unsubscribe();
+  }, [form.watch]);
+  
+  // Check for existing drafts when component mounts
+  useEffect(() => {
+    if (user) {
+      checkForExistingDraft();
+    }
+  }, [user]);
+  
+  const checkForExistingDraft = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('landing_pages')
+        .select('*')
+        .eq('user_id', user?.id)
+        .eq('status', 'draft')
+        .order('updated_at', { ascending: false })
+        .limit(1);
+        
+      if (error) {
+        throw error;
+      }
+      
+      if (data && data.length > 0) {
+        const draft = data[0];
+        setDraftId(draft.id);
+        
+        // Populate form with draft data
+        form.reset({
+          title: draft.title || "",
+          campaign_type: draft.campaign_type || "",
+          industry: draft.industry || "",
+          audience: draft.audience || "",
+          keywords: draft.initial_keywords ? draft.initial_keywords.join(', ') : ""
+        });
+        
+        // If there's HTML content, show the preview
+        if (draft.html_content) {
+          setPreviewHtml(draft.html_content);
+          setActiveTab("preview");
+          
+          // Attempt to reconstruct the generated content and theme options
+          if (draft.metadata) {
+            try {
+              const metadata = typeof draft.metadata === 'string' 
+                ? JSON.parse(draft.metadata) 
+                : draft.metadata;
+                
+              if (metadata.generatedContent) {
+                setGeneratedContent(metadata.generatedContent);
+              }
+              
+              if (metadata.themeOptions) {
+                setThemeOptions(metadata.themeOptions);
+                setSelectedThemeIndex(metadata.selectedThemeIndex || 0);
+              }
+              
+              if (metadata.mediaType) {
+                setMediaType(metadata.mediaType);
+              }
+              
+              if (metadata.layoutStyle) {
+                setLayoutStyle(metadata.layoutStyle);
+              }
+            } catch (e) {
+              console.error("Error parsing draft metadata", e);
+            }
+          }
+        }
+        
+        toast("Loaded draft from your previous session", {
+          description: `Last edited: ${new Date(draft.updated_at).toLocaleString()}`
+        });
+      }
+    } catch (error: any) {
+      console.error("Error checking for drafts:", error);
+    }
+  };
+
+  const autoSaveDraft = async (formValues: z.infer<typeof formSchema>) => {
+    try {
+      if (!user) return;
+      
+      setAutoSaving(true);
+      
+      // Process keywords into an array
+      const keywordsArray = formValues.keywords
+        .split(",")
+        .map(keyword => keyword.trim())
+        .filter(keyword => keyword.length > 0);
+      
+      // Prepare metadata to store
+      const metadata = {
+        generatedContent: generatedContent,
+        themeOptions: themeOptions,
+        selectedThemeIndex: selectedThemeIndex,
+        mediaType: mediaType,
+        layoutStyle: layoutStyle
+      };
+      
+      if (draftId) {
+        // Update existing draft
+        const { error } = await supabase
+          .from('landing_pages')
+          .update({
+            title: formValues.title,
+            campaign_type: formValues.campaign_type,
+            industry: formValues.industry,
+            audience: formValues.audience,
+            initial_keywords: keywordsArray,
+            html_content: previewHtml || null,
+            status: 'draft',
+            metadata: metadata,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', draftId);
+          
+        if (error) throw error;
+      } else {
+        // Create new draft
+        const { data, error } = await supabase
+          .from('landing_pages')
+          .insert([{
+            user_id: user.id,
+            title: formValues.title,
+            campaign_type: formValues.campaign_type,
+            industry: formValues.industry,
+            audience: formValues.audience,
+            initial_keywords: keywordsArray,
+            html_content: previewHtml || null,
+            status: 'draft',
+            metadata: metadata
+          }])
+          .select();
+          
+        if (error) throw error;
+        
+        if (data && data[0]) {
+          setDraftId(data[0].id);
+        }
+      }
+      
+      // Update last saved timestamp
+      setLastSaved(new Date());
+    } catch (error: any) {
+      console.error("Error auto-saving draft:", error);
+    } finally {
+      setAutoSaving(false);
+    }
+  };
 
   const handleSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
@@ -129,7 +324,9 @@ const LandingPageCreator = () => {
         values.audience, 
         values.industry, 
         values.campaign_type,
-        keywordsArray
+        keywordsArray,
+        mediaType,
+        layoutStyle
       );
       
       // Store the generated content and theme options
@@ -142,12 +339,17 @@ const LandingPageCreator = () => {
         values.audience,
         keywordsArray,
         themeOptions[0],
-        content
+        content,
+        mediaType,
+        layoutStyle
       );
       
       // Show preview of the generated page
       setPreviewHtml(enhancedHtml);
       setActiveTab("preview");
+      
+      // Auto save the draft with the preview content
+      await autoSaveDraft(values);
 
     } catch (error: any) {
       toast.error(`Error generating page: ${error.message}`);
@@ -172,43 +374,76 @@ const LandingPageCreator = () => {
         .filter(keyword => keyword.length > 0);
 
       // Add suggested keywords
-      const allKeywords = [...keywordsArray, ...generatedContent.keywordSuggestions];
-
-      // Save to Supabase
-      const { data, error } = await supabase
-        .from('landing_pages')
-        .insert([{
-          user_id: user.id,
-          title: form.getValues("title"),
-          campaign_type: form.getValues("campaign_type"),
-          industry: form.getValues("industry"),
-          audience: form.getValues("audience"),
-          initial_keywords: allKeywords,
-          html_content: previewHtml
-        }])
-        .select();
-
-      if (error) {
-        throw error;
+      const allKeywords = [...keywordsArray];
+      if (generatedContent.keywordSuggestions) {
+        allKeywords.push(...generatedContent.keywordSuggestions);
       }
 
-      // Add initial keywords
-      if (data && data[0]) {
-        const pageId = data[0].id;
+      // Check if we're updating a draft or creating a new page
+      if (draftId) {
+        // Update existing draft to published
+        const { error } = await supabase
+          .from('landing_pages')
+          .update({
+            title: form.getValues("title"),
+            campaign_type: form.getValues("campaign_type"),
+            industry: form.getValues("industry"),
+            audience: form.getValues("audience"),
+            initial_keywords: allKeywords,
+            html_content: previewHtml,
+            status: 'published',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', draftId);
+          
+        if (error) throw error;
         
-        // Process each keyword individually to avoid array insert issues
+        // Process keywords for the page
         for (const keyword of allKeywords) {
           await supabase.from('keywords').insert({
-            page_id: pageId,
+            page_id: draftId,
             keyword: keyword,
-            // Dummy data for now - convert string to number
             volume: Math.floor(Math.random() * 5000),
             cpc: parseFloat((Math.random() * 5).toFixed(2))
           });
         }
         
-        toast.success("Landing page created successfully!");
-        navigate(`/pages/${pageId}/edit`);
+        toast.success("Landing page published successfully!");
+        navigate(`/pages/${draftId}/edit`);
+      } else {
+        // Create new published page
+        const { data, error } = await supabase
+          .from('landing_pages')
+          .insert([{
+            user_id: user.id,
+            title: form.getValues("title"),
+            campaign_type: form.getValues("campaign_type"),
+            industry: form.getValues("industry"),
+            audience: form.getValues("audience"),
+            initial_keywords: allKeywords,
+            html_content: previewHtml,
+            status: 'published'
+          }])
+          .select();
+          
+        if (error) throw error;
+        
+        if (data && data[0]) {
+          const pageId = data[0].id;
+          
+          // Process keywords for the page
+          for (const keyword of allKeywords) {
+            await supabase.from('keywords').insert({
+              page_id: pageId,
+              keyword: keyword,
+              volume: Math.floor(Math.random() * 5000),
+              cpc: parseFloat((Math.random() * 5).toFixed(2))
+            });
+          }
+          
+          toast.success("Landing page created successfully!");
+          navigate(`/pages/${pageId}/edit`);
+        }
       }
     } catch (error: any) {
       toast.error(`Error saving page: ${error.message}`);
@@ -233,7 +468,9 @@ const LandingPageCreator = () => {
       values.audience, 
       values.industry, 
       values.campaign_type,
-      keywordsArray
+      keywordsArray,
+      mediaType,
+      layoutStyle
     );
     
     setGeneratedContent(content);
@@ -244,11 +481,16 @@ const LandingPageCreator = () => {
       values.audience,
       keywordsArray,
       themeOptions[selectedThemeIndex],
-      content
+      content,
+      mediaType,
+      layoutStyle
     );
     
     // Show preview of the regenerated page
     setPreviewHtml(enhancedHtml);
+    
+    // Auto save with the new content
+    autoSaveDraft(values);
   };
 
   const regenerateTheme = () => {
@@ -270,11 +512,16 @@ const LandingPageCreator = () => {
       values.audience,
       keywordsArray,
       themeOptions[nextThemeIndex],
-      generatedContent
+      generatedContent,
+      mediaType,
+      layoutStyle
     );
     
     // Show preview of the regenerated page
     setPreviewHtml(enhancedHtml);
+    
+    // Auto save with the new theme
+    autoSaveDraft(values);
   };
 
   const toggleOptimizer = () => {
@@ -284,24 +531,46 @@ const LandingPageCreator = () => {
   // Handler for applying changes from the optimizer
   const handleApplyOptimizations = (updatedHtml: string) => {
     setPreviewHtml(updatedHtml);
+    
+    // Auto save with the optimized content
+    autoSaveDraft(form.getValues());
   };
 
   return (
     <Layout title="Create Landing Page">
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="form">Page Details</TabsTrigger>
-            <TabsTrigger value="preview" disabled={!previewHtml}>Preview & Save</TabsTrigger>
+            <TabsTrigger value="preview" disabled={!previewHtml}>Preview & Edit</TabsTrigger>
           </TabsList>
           
           <TabsContent value="form" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Create a New Landing Page</CardTitle>
-                <CardDescription>
-                  Fill in the details below to generate your AI-optimized landing page
-                </CardDescription>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>Create a New Landing Page</CardTitle>
+                    <CardDescription>
+                      Fill in the details below to generate your AI-optimized landing page
+                    </CardDescription>
+                  </div>
+                  {lastSaved && (
+                    <div className="text-xs text-muted-foreground flex items-center">
+                      {autoSaving ? (
+                        <>
+                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                          Auto-saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-3 w-3 mr-1" />
+                          Last saved: {lastSaved.toLocaleTimeString()}
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
               </CardHeader>
 
               <Form {...form}>
@@ -331,6 +600,7 @@ const LandingPageCreator = () => {
                             <Select
                               onValueChange={field.onChange}
                               defaultValue={field.value}
+                              value={field.value}
                             >
                               <FormControl>
                                 <SelectTrigger>
@@ -360,6 +630,7 @@ const LandingPageCreator = () => {
                             <Select
                               onValueChange={field.onChange}
                               defaultValue={field.value}
+                              value={field.value}
                             >
                               <FormControl>
                                 <SelectTrigger>
@@ -379,6 +650,75 @@ const LandingPageCreator = () => {
                           </FormItem>
                         )}
                       />
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormItem>
+                        <FormLabel>Media Type</FormLabel>
+                        <Select
+                          onValueChange={setMediaType}
+                          defaultValue={mediaType}
+                          value={mediaType}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select media type" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectGroup>
+                              <SelectLabel>Media Types</SelectLabel>
+                              {MEDIA_TYPE_OPTIONS.map((type) => (
+                                <SelectItem key={type} value={type}>
+                                  {type === "Image" && (
+                                    <div className="flex items-center">
+                                      <Image className="h-4 w-4 mr-2" />
+                                      Image
+                                    </div>
+                                  )}
+                                  {type === "Video" && (
+                                    <div className="flex items-center">
+                                      <Video className="h-4 w-4 mr-2" />
+                                      Video
+                                    </div>
+                                  )}
+                                  {type === "Image and Video" && (
+                                    <div className="flex items-center">
+                                      <Image className="h-4 w-4 mr-2" />
+                                      <Video className="h-4 w-4 mr-1" />
+                                      Both
+                                    </div>
+                                  )}
+                                  {type === "None" && type}
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
+                          </SelectContent>
+                        </Select>
+                      </FormItem>
+                      
+                      <FormItem>
+                        <FormLabel>Layout Style</FormLabel>
+                        <Select
+                          onValueChange={setLayoutStyle}
+                          defaultValue={layoutStyle}
+                          value={layoutStyle}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select layout style" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectGroup>
+                              <SelectLabel>Layout Styles</SelectLabel>
+                              {LAYOUT_OPTIONS.map((style) => (
+                                <SelectItem key={style} value={style}>{style}</SelectItem>
+                              ))}
+                            </SelectGroup>
+                          </SelectContent>
+                        </Select>
+                      </FormItem>
                     </div>
 
                     <FormField
@@ -436,97 +776,111 @@ const LandingPageCreator = () => {
           
           <TabsContent value="preview" className="space-y-4">
             {previewHtml && (
-              <>
-                <div className="flex flex-col md:flex-row gap-4 items-center justify-between mb-4">
-                  <h2 className="text-xl font-semibold">Landing Page Preview</h2>
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={regenerateContent}
-                      disabled={generatingPage}
-                    >
-                      <FileText className="mr-2 h-4 w-4" />
-                      Regenerate Content
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={regenerateTheme}
-                      disabled={generatingPage}
-                    >
-                      <Palette className="mr-2 h-4 w-4" />
-                      Try Different Design
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={toggleOptimizer}
-                      disabled={generatingPage}
-                    >
-                      <Sparkles className="mr-2 h-4 w-4" />
-                      {showOptimizer ? "Hide AI Optimizer" : "AI Optimizer"}
-                    </Button>
-                    <Button 
-                      size="sm"
-                      onClick={handleSavePage}
-                      disabled={generatingPage}
-                    >
-                      {generatingPage ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                        <RefreshCw className="mr-2 h-4 w-4" />
-                      )}
-                      Save Landing Page
-                    </Button>
-                  </div>
-                </div>
-                
-                {showOptimizer && (
-                  <DynamicLandingPageOptimizer 
-                    htmlContent={previewHtml}
-                    pageInfo={{
-                      title: form.getValues("title"),
-                      audience: form.getValues("audience"),
-                      industry: form.getValues("industry"),
-                      campaign_type: form.getValues("campaign_type"),
-                      keywords: form.getValues("keywords")
-                        .split(",")
-                        .map(keyword => keyword.trim())
-                        .filter(keyword => keyword.length > 0)
-                    }}
-                    onApplyChanges={handleApplyOptimizations}
-                  />
-                )}
-                
-                <div className="border rounded-lg overflow-hidden bg-white">
-                  <iframe
-                    title="Landing Page Preview"
-                    srcDoc={previewHtml}
-                    className="w-full h-[600px] border-0"
-                  />
-                </div>
-                
-                {generatedContent?.keywordSuggestions && generatedContent.keywordSuggestions.length > 0 && (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div className="lg:col-span-1 space-y-4">
                   <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg">AI-Suggested Keywords</CardTitle>
-                      <CardDescription>
-                        Our AI has suggested these additional keywords that might improve your page performance
-                      </CardDescription>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-lg">Page Controls</CardTitle>
                     </CardHeader>
-                    <CardContent>
-                      <div className="flex flex-wrap gap-2">
-                        {generatedContent.keywordSuggestions.map((keyword: string, index: number) => (
-                          <div key={index} className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
-                            {keyword}
-                          </div>
-                        ))}
-                      </div>
+                    <CardContent className="space-y-3">
+                      <Button 
+                        variant="outline" 
+                        className="w-full justify-start"
+                        onClick={regenerateContent}
+                        disabled={generatingPage}
+                      >
+                        <FileText className="mr-2 h-4 w-4" />
+                        Regenerate Content
+                      </Button>
+                      
+                      <Button 
+                        variant="outline" 
+                        className="w-full justify-start"
+                        onClick={regenerateTheme}
+                        disabled={generatingPage}
+                      >
+                        <Palette className="mr-2 h-4 w-4" />
+                        Try Different Design
+                      </Button>
+                      
+                      <Button
+                        variant={showOptimizer ? "secondary" : "outline"}
+                        className="w-full justify-start"
+                        onClick={toggleOptimizer}
+                        disabled={generatingPage}
+                      >
+                        <Sparkles className="mr-2 h-4 w-4" />
+                        {showOptimizer ? "Hide AI Optimizer" : "AI Optimizer"}
+                      </Button>
+                      
+                      <Button 
+                        className="w-full justify-start"
+                        onClick={handleSavePage}
+                        disabled={generatingPage}
+                      >
+                        {generatingPage ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <Save className="mr-2 h-4 w-4" />
+                        )}
+                        Save Landing Page
+                      </Button>
                     </CardContent>
                   </Card>
-                )}
-              </>
+                  
+                  {showOptimizer && (
+                    <DynamicLandingPageOptimizer 
+                      htmlContent={previewHtml}
+                      pageInfo={{
+                        title: form.getValues("title"),
+                        audience: form.getValues("audience"),
+                        industry: form.getValues("industry"),
+                        campaign_type: form.getValues("campaign_type"),
+                        keywords: form.getValues("keywords")
+                          .split(",")
+                          .map(keyword => keyword.trim())
+                          .filter(keyword => keyword.length > 0)
+                      }}
+                      onApplyChanges={handleApplyOptimizations}
+                    />
+                  )}
+                  
+                  {generatedContent?.keywordSuggestions && generatedContent.keywordSuggestions.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg">AI-Suggested Keywords</CardTitle>
+                        <CardDescription>
+                          Our AI has suggested these additional keywords that might improve your page performance
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex flex-wrap gap-2">
+                          {generatedContent.keywordSuggestions.map((keyword: string, index: number) => (
+                            <div key={index} className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
+                              {keyword}
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+                
+                <div className="lg:col-span-2">
+                  <Card className="overflow-hidden">
+                    <CardHeader className="pb-2 border-b">
+                      <CardTitle className="text-lg">Landing Page Preview</CardTitle>
+                    </CardHeader>
+                    <div className="h-[700px] overflow-auto">
+                      <iframe
+                        title="Landing Page Preview"
+                        srcDoc={previewHtml}
+                        className="w-full h-full border-0"
+                      />
+                    </div>
+                  </Card>
+                </div>
+              </div>
             )}
           </TabsContent>
         </Tabs>

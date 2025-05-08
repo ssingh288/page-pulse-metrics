@@ -15,6 +15,7 @@ import {
   RefreshCw,
   Sparkles,
   X,
+  FileEdit
 } from "lucide-react";
 import {
   Card,
@@ -36,6 +37,10 @@ interface PageInfo {
   id: string;
   title: string;
   html_content: string;
+  audience: string;
+  industry: string; 
+  campaign_type: string;
+  initial_keywords: string[];
 }
 
 interface AISuggestion {
@@ -88,10 +93,10 @@ const AIOptimizer = () => {
         
         setLoading(true);
         
-        // Fetch page info
+        // Fetch page info with additional fields for AI optimizer
         const { data: pageData, error: pageError } = await supabase
           .from('landing_pages')
-          .select('id, title, html_content')
+          .select('id, title, html_content, audience, industry, campaign_type, initial_keywords')
           .eq('id', id)
           .eq('user_id', user.id)
           .single();
@@ -261,6 +266,13 @@ const AIOptimizer = () => {
         return type;
     }
   };
+  
+  const navigateToLandingPageCreator = () => {
+    if (page) {
+      // Navigate to landing page creator with query parameters to preload the page
+      navigate(`/create-landing?edit=true&pageId=${page.id}`);
+    }
+  };
 
   if (loading) {
     return (
@@ -293,137 +305,168 @@ const AIOptimizer = () => {
             <ArrowLeft className="mr-2 h-4 w-4" /> Back to Pages
           </Button>
           
-          <Button
-            size="sm"
-            onClick={generateSuggestions}
-            disabled={generating}
-          >
-            {generating ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Sparkles className="mr-2 h-4 w-4" />
-            )}
-            Generate New Suggestions
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={navigateToLandingPageCreator}
+            >
+              <FileEdit className="mr-2 h-4 w-4" />
+              Edit in Advanced Editor
+            </Button>
+            
+            <Button
+              size="sm"
+              onClick={generateSuggestions}
+              disabled={generating}
+            >
+              {generating ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="mr-2 h-4 w-4" />
+              )}
+              Generate New Suggestions
+            </Button>
+          </div>
         </div>
-
-        <Card>
-          <CardHeader>
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <div>
-                <CardTitle className="flex items-center">
-                  <Lightbulb className="mr-2 h-5 w-5 text-yellow-500" />
-                  AI Optimization Suggestions
-                </CardTitle>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-1">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center">
+                    <Lightbulb className="mr-2 h-5 w-5 text-yellow-500" />
+                    AI Suggestions
+                  </CardTitle>
+                  
+                  <Tabs
+                    value={currentTab}
+                    onValueChange={setCurrentTab}
+                    className="w-full"
+                  >
+                    <TabsList className="grid grid-cols-4">
+                      <TabsTrigger value="all">All</TabsTrigger>
+                      <TabsTrigger value="pending">Pending</TabsTrigger>
+                      <TabsTrigger value="applied">Applied</TabsTrigger>
+                      <TabsTrigger value="rejected">Rejected</TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                </div>
                 <CardDescription>
                   Smart suggestions to improve your landing page performance
                 </CardDescription>
-              </div>
-              <Tabs
-                value={currentTab}
-                onValueChange={setCurrentTab}
-                className="w-full md:w-auto"
-              >
-                <TabsList className="grid grid-cols-4 w-full md:w-[400px]">
-                  <TabsTrigger value="all">All</TabsTrigger>
-                  <TabsTrigger value="pending">Pending</TabsTrigger>
-                  <TabsTrigger value="applied">Applied</TabsTrigger>
-                  <TabsTrigger value="rejected">Rejected</TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {filteredSuggestions().length === 0 ? (
-              <div className="text-center py-12">
-                <Sparkles className="mx-auto h-12 w-12 text-primary/30 mb-4" />
-                <h3 className="text-lg font-medium mb-2">No suggestions found</h3>
-                <p className="text-sm text-muted-foreground mb-6">
-                  {currentTab === "all"
-                    ? "No AI suggestions have been generated yet for this page."
-                    : `No ${currentTab} suggestions found.`}
-                </p>
-                {currentTab === "all" && (
-                  <Button onClick={generateSuggestions} disabled={generating}>
-                    {generating ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <Sparkles className="mr-2 h-4 w-4" />
+              </CardHeader>
+              
+              <CardContent className="max-h-[650px] overflow-y-auto">
+                {filteredSuggestions().length === 0 ? (
+                  <div className="text-center py-8">
+                    <Sparkles className="mx-auto h-12 w-12 text-primary/30 mb-4" />
+                    <h3 className="text-lg font-medium mb-2">No suggestions found</h3>
+                    <p className="text-sm text-muted-foreground mb-6">
+                      {currentTab === "all"
+                        ? "No AI suggestions have been generated yet for this page."
+                        : `No ${currentTab} suggestions found.`}
+                    </p>
+                    {currentTab === "all" && (
+                      <Button onClick={generateSuggestions} disabled={generating}>
+                        {generating ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <Sparkles className="mr-2 h-4 w-4" />
+                        )}
+                        Generate Suggestions
+                      </Button>
                     )}
-                    Generate Suggestions
-                  </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {filteredSuggestions().map((suggestion) => (
+                      <Card key={suggestion.id} className="overflow-hidden">
+                        <div className={`p-1 ${
+                          suggestion.status === "applied" 
+                            ? "bg-green-500" 
+                            : suggestion.status === "rejected" 
+                              ? "bg-red-500" 
+                              : "bg-yellow-500"
+                        }`}
+                        />
+                        <CardContent className="p-4 pt-5">
+                          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                            <div>
+                              <div className="flex items-center mb-2">
+                                <Badge>
+                                  {getSuggestionTypeLabel(suggestion.suggestion_type)}
+                                </Badge>
+                                <span className="text-xs text-muted-foreground ml-3">
+                                  {format(new Date(suggestion.created_at), "MMM d, yyyy")}
+                                </span>
+                              </div>
+                              <p>{suggestion.content}</p>
+                            </div>
+                            {suggestion.status === "pending" && (
+                              <div className="flex items-center gap-2 shrink-0">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleRejectSuggestion(suggestion.id)}
+                                >
+                                  <X className="mr-2 h-4 w-4" /> Reject
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleApplySuggestion(suggestion.id)}
+                                >
+                                  <Check className="mr-2 h-4 w-4" /> Apply
+                                </Button>
+                              </div>
+                            )}
+                            {suggestion.status === "applied" && (
+                              <div className="flex items-center text-green-500">
+                                <Check className="mr-2 h-4 w-4" />
+                                Applied {suggestion.applied_at && format(new Date(suggestion.applied_at), "MMM d, yyyy")}
+                              </div>
+                            )}
+                            {suggestion.status === "rejected" && (
+                              <div className="flex items-center text-red-500">
+                                <X className="mr-2 h-4 w-4" />
+                                Rejected
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
                 )}
+              </CardContent>
+              
+              <CardFooter className="flex justify-center border-t bg-muted/50">
+                <div className="flex items-center text-center text-sm text-muted-foreground p-2">
+                  <RefreshCw className="mr-2 h-3 w-3" />
+                  {suggestions.length === 0
+                    ? "AI suggestions are generated based on page performance data"
+                    : `AI analyzes user behavior to optimize your landing page`}
+                </div>
+              </CardFooter>
+            </Card>
+          </div>
+          
+          <div className="lg:col-span-2">
+            <Card className="overflow-hidden">
+              <CardHeader className="pb-2 border-b">
+                <CardTitle className="text-lg">Landing Page Preview</CardTitle>
+              </CardHeader>
+              <div className="h-[700px] overflow-auto">
+                <iframe
+                  title="Landing Page Preview"
+                  srcDoc={page.html_content}
+                  className="w-full h-full border-0"
+                />
               </div>
-            ) : (
-              <div className="space-y-4">
-                {filteredSuggestions().map((suggestion) => (
-                  <Card key={suggestion.id} className="overflow-hidden">
-                    <div className={`p-1 ${
-                      suggestion.status === "applied" 
-                        ? "bg-green-500" 
-                        : suggestion.status === "rejected" 
-                          ? "bg-red-500" 
-                          : "bg-yellow-500"
-                    }`}
-                    />
-                    <CardContent className="p-4 pt-5">
-                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                        <div>
-                          <div className="flex items-center mb-2">
-                            <Badge>
-                              {getSuggestionTypeLabel(suggestion.suggestion_type)}
-                            </Badge>
-                            <span className="text-xs text-muted-foreground ml-3">
-                              {format(new Date(suggestion.created_at), "MMM d, yyyy")}
-                            </span>
-                          </div>
-                          <p>{suggestion.content}</p>
-                        </div>
-                        {suggestion.status === "pending" && (
-                          <div className="flex items-center gap-2 shrink-0">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleRejectSuggestion(suggestion.id)}
-                            >
-                              <X className="mr-2 h-4 w-4" /> Reject
-                            </Button>
-                            <Button
-                              size="sm"
-                              onClick={() => handleApplySuggestion(suggestion.id)}
-                            >
-                              <Check className="mr-2 h-4 w-4" /> Apply
-                            </Button>
-                          </div>
-                        )}
-                        {suggestion.status === "applied" && (
-                          <div className="flex items-center text-green-500">
-                            <Check className="mr-2 h-4 w-4" />
-                            Applied {suggestion.applied_at && format(new Date(suggestion.applied_at), "MMM d, yyyy")}
-                          </div>
-                        )}
-                        {suggestion.status === "rejected" && (
-                          <div className="flex items-center text-red-500">
-                            <X className="mr-2 h-4 w-4" />
-                            Rejected
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </CardContent>
-          <CardFooter className="flex justify-center border-t bg-muted/50">
-            <div className="flex items-center text-center text-sm text-muted-foreground p-2">
-              <RefreshCw className="mr-2 h-3 w-3" />
-              {suggestions.length === 0
-                ? "AI suggestions are generated based on page performance data"
-                : `AI analyzes user behavior to optimize your landing page`}
-            </div>
-          </CardFooter>
-        </Card>
+            </Card>
+          </div>
+        </div>
       </div>
     </Layout>
   );

@@ -1,42 +1,25 @@
 
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
-import AiContentGenerator from "@/components/AiContentGenerator";
 
 const AIContentGeneratorPage = () => {
+  const navigate = useNavigate();
+  
+  // Redirect to landing page creator since this feature is now unified
+  useEffect(() => {
+    navigate('/create-landing');
+  }, [navigate]);
+  
   return (
-    <Layout title="AI Content Generator">
+    <Layout title="Redirecting...">
       <div className="container max-w-4xl">
-        <div className="space-y-6">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">AI Content Generator</h1>
-            <p className="text-muted-foreground">
-              Use AI to optimize your landing page content for better conversions and marketing performance
-            </p>
-          </div>
-          
-          <AiContentGenerator />
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-muted/50 rounded-lg p-4 text-sm text-muted-foreground">
-              <h3 className="font-medium mb-2">Content Optimization Tips:</h3>
-              <ul className="list-disc pl-5 space-y-1">
-                <li>Be specific about the target audience and goal of your content</li>
-                <li>Include relevant keywords you want to focus on</li>
-                <li>For best results, provide context about your product or service</li>
-                <li>Try different variations to find what works best</li>
-              </ul>
-            </div>
-            
-            <div className="bg-muted/50 rounded-lg p-4 text-sm text-muted-foreground">
-              <h3 className="font-medium mb-2">Marketing Optimization Tips:</h3>
-              <ul className="list-disc pl-5 space-y-1">
-                <li>Provide an accessible URL for the most accurate analysis</li>
-                <li>Clearly define your target audience for personalized recommendations</li>
-                <li>Specify your industry to receive industry-specific insights</li>
-                <li>Select a tone that matches your brand identity</li>
-              </ul>
-            </div>
-          </div>
+        <div className="space-y-6 text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto"></div>
+          <h1 className="text-3xl font-bold mb-2">Redirecting to Landing Page Creator</h1>
+          <p className="text-muted-foreground">
+            The AI Content Generator has been integrated into our Landing Page Creator for a more streamlined experience.
+          </p>
         </div>
       </div>
     </Layout>

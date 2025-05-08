@@ -1,10 +1,10 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, Sparkles, RefreshCw, LineChart, LayoutGrid } from "lucide-react";
+import { Loader2, Sparkles, RefreshCw, LineChart, LayoutGrid, History, X } from "lucide-react";
 import OptimizationPanel from "./OptimizationPanel";
 import AdPreviewPanel from "./AdPreviewPanel";
 import { 
@@ -37,15 +37,53 @@ const DynamicLandingPageOptimizer: React.FC<DynamicLandingPageOptimizerProps> = 
   const [isLoadingAds, setIsLoadingAds] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("page-optimization");
   
+  // Version history
+  const [suggestionHistory, setSuggestionHistory] = useState<PageOptimizationSuggestion[]>([]);
+  const [adSuggestionHistory, setAdSuggestionHistory] = useState<AdSuggestion[]>([]);
+  const [currentSuggestionIndex, setCurrentSuggestionIndex] = useState<number>(0);
+  const [showVersionHistory, setShowVersionHistory] = useState<boolean>(false);
+  
+  // Generate multiple suggestions
+  const [allOptimizationSuggestions, setAllOptimizationSuggestions] = useState<PageOptimizationSuggestion[]>([]);
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState<number>(0);
+  
   const handleGenerateOptimizations = async () => {
     try {
       setIsLoadingOptimizations(true);
-      const suggestions = await generatePageOptimizations(htmlContent, pageInfo);
-      setOptimizationSuggestions(suggestions);
+      
+      // Generate three suggestions in parallel
+      const suggestionsPromises = [
+        generatePageOptimizations(htmlContent, pageInfo),
+        generatePageOptimizations(htmlContent, pageInfo),
+        generatePageOptimizations(htmlContent, pageInfo)
+      ];
+      
+      const allSuggestions = await Promise.all(suggestionsPromises);
+      
+      // Save all suggestions
+      setAllOptimizationSuggestions(allSuggestions);
+      setSelectedSuggestionIndex(0); // Select first suggestion by default
+      setOptimizationSuggestions(allSuggestions[0]);
+      
+      // Add to history
+      if (optimizationSuggestions) {
+        setSuggestionHistory([...suggestionHistory, optimizationSuggestions]);
+      }
+      
       toast.success("Generated optimization suggestions!");
     } catch (error) {
       console.error("Error generating optimizations:", error);
       toast.error("Failed to generate optimization suggestions");
+      
+      // If we fail to generate multiple, try to generate just one
+      try {
+        const suggestion = await generatePageOptimizations(htmlContent, pageInfo);
+        setOptimizationSuggestions(suggestion);
+        setAllOptimizationSuggestions([suggestion]);
+        setSelectedSuggestionIndex(0);
+      } catch (fallbackError) {
+        console.error("Fallback error:", fallbackError);
+      }
     } finally {
       setIsLoadingOptimizations(false);
     }
@@ -55,6 +93,12 @@ const DynamicLandingPageOptimizer: React.FC<DynamicLandingPageOptimizerProps> = 
     try {
       setIsLoadingAds(true);
       const suggestions = await generateAdSuggestions(htmlContent, pageInfo);
+      
+      // Add to history if we already had suggestions
+      if (adSuggestions) {
+        setAdSuggestionHistory([...adSuggestionHistory, adSuggestions]);
+      }
+      
       setAdSuggestions(suggestions);
       toast.success("Generated ad content for multiple platforms!");
     } catch (error) {
@@ -69,6 +113,28 @@ const DynamicLandingPageOptimizer: React.FC<DynamicLandingPageOptimizerProps> = 
     onApplyChanges(updatedHtml);
     toast.success("Applied changes to landing page!");
   };
+  
+  const handleSelectSuggestion = (index: number) => {
+    setSelectedSuggestionIndex(index);
+    setOptimizationSuggestions(allOptimizationSuggestions[index]);
+  };
+  
+  const handleSelectFromHistory = (index: number) => {
+    setCurrentSuggestionIndex(index);
+    setOptimizationSuggestions(suggestionHistory[index]);
+  };
+  
+  const handleSelectAdFromHistory = (index: number) => {
+    setAdSuggestions(adSuggestionHistory[index]);
+  };
+  
+  useEffect(() => {
+    // Reset versions when generating new suggestions
+    if (isLoadingOptimizations) {
+      setSuggestionHistory([]);
+      setCurrentSuggestionIndex(0);
+    }
+  }, [isLoadingOptimizations]);
 
   return (
     <Card>
@@ -121,7 +187,20 @@ const DynamicLandingPageOptimizer: React.FC<DynamicLandingPageOptimizerProps> = 
               {(optimizationSuggestions || isLoadingOptimizations) && (
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-medium">Optimization Suggestions</h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-lg font-medium">Optimization Suggestions</h3>
+                      {suggestionHistory.length > 0 && (
+                        <Button 
+                          variant="outline" 
+                          size="icon"
+                          onClick={() => setShowVersionHistory(!showVersionHistory)}
+                          className="h-8 w-8"
+                        >
+                          <History className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                    
                     <Button 
                       variant="outline" 
                       size="sm" 
@@ -137,11 +216,37 @@ const DynamicLandingPageOptimizer: React.FC<DynamicLandingPageOptimizerProps> = 
                     </Button>
                   </div>
                   
+                  {/* Multiple suggestions selector */}
+                  {allOptimizationSuggestions.length > 1 && !showVersionHistory && (
+                    <div className="flex gap-2 overflow-x-auto pb-2">
+                      {allOptimizationSuggestions.map((_, index) => {
+                        const suggestion = allOptimizationSuggestions[index];
+                        const trafficImprovement = suggestion.trafficEstimate ? 
+                          parseFloat(suggestion.trafficEstimate.potential.replace('%', '')) - 
+                          parseFloat(suggestion.trafficEstimate.current.replace('%', '')) : 0;
+                        
+                        return (
+                          <Card 
+                            key={index} 
+                            className={`p-3 cursor-pointer min-w-[200px] ${selectedSuggestionIndex === index ? 'border-primary' : ''}`}
+                            onClick={() => handleSelectSuggestion(index)}
+                          >
+                            <div className="text-sm font-medium">Suggestion {index + 1}</div>
+                            <div className="text-xs text-muted-foreground mt-1">Potential traffic increase</div>
+                            <div className="text-lg font-bold text-green-600">+{trafficImprovement.toFixed(1)}%</div>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  )}
+                  
                   <OptimizationPanel
                     optimizationSuggestions={optimizationSuggestions}
                     isLoading={isLoadingOptimizations}
                     originalHtml={htmlContent}
                     onApplySuggestion={handleApplySuggestion}
+                    suggestionHistory={showVersionHistory ? suggestionHistory : undefined}
+                    onSelectFromHistory={showVersionHistory ? handleSelectFromHistory : undefined}
                   />
                 </div>
               )}
@@ -171,7 +276,32 @@ const DynamicLandingPageOptimizer: React.FC<DynamicLandingPageOptimizerProps> = 
               {(adSuggestions || isLoadingAds) && (
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-medium">Platform-Specific Ads</h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-lg font-medium">Platform-Specific Ads</h3>
+                      
+                      {adSuggestionHistory.length > 0 && (
+                        <div className="flex gap-2">
+                          {adSuggestionHistory.map((_, index) => (
+                            <Button
+                              key={index}
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleSelectAdFromHistory(index)}
+                            >
+                              Version {index + 1}
+                            </Button>
+                          ))}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setAdSuggestions(adSuggestionHistory[adSuggestionHistory.length - 1])}
+                          >
+                            Latest
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                    
                     <Button 
                       variant="outline" 
                       size="sm" 

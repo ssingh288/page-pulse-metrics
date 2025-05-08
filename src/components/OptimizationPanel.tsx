@@ -1,330 +1,513 @@
 
-import React from "react";
+import { useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageOptimizationSuggestion, applyOptimizationsToHTML } from "@/utils/aiService";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { CheckCircle, Circle, ArrowRight, Sparkles, TrendingUp } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { CircleCheck, ArrowUpRight, BarChart2, Lightbulb } from "lucide-react";
 
 interface OptimizationPanelProps {
   optimizationSuggestions: PageOptimizationSuggestion | null;
   isLoading: boolean;
   originalHtml: string;
   onApplySuggestion: (updatedHtml: string) => void;
+  suggestionHistory?: PageOptimizationSuggestion[];
+  onSelectFromHistory?: (index: number) => void;
 }
 
 const OptimizationPanel: React.FC<OptimizationPanelProps> = ({
   optimizationSuggestions,
   isLoading,
   originalHtml,
-  onApplySuggestion
+  onApplySuggestion,
+  suggestionHistory = [],
+  onSelectFromHistory
 }) => {
+  const [activeCategory, setActiveCategory] = useState("all");
   
-  const handleApplySuggestion = (type: 'headline' | 'cta' | 'content', index?: number) => {
-    if (!optimizationSuggestions) return;
-    
-    // Create a partial suggestion object with only the selected change
-    const partialSuggestions: PageOptimizationSuggestion = {};
-    
-    if (type === 'headline' && optimizationSuggestions.headline) {
-      partialSuggestions.headline = optimizationSuggestions.headline;
-    } else if (type === 'cta' && optimizationSuggestions.cta) {
-      partialSuggestions.cta = optimizationSuggestions.cta;
-    } else if (type === 'content' && optimizationSuggestions.content && index !== undefined) {
-      partialSuggestions.content = [optimizationSuggestions.content[index]];
-    }
-    
-    // Apply just this specific change to the HTML
-    const updatedHtml = applyOptimizationsToHTML(originalHtml, partialSuggestions);
-    onApplySuggestion(updatedHtml);
-  };
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-[100px] w-full" />
+        <Skeleton className="h-[150px] w-full" />
+        <Skeleton className="h-[120px] w-full" />
+      </div>
+    );
+  }
   
-  const handleApplyAll = () => {
-    if (!optimizationSuggestions) return;
-    
+  if (!optimizationSuggestions) return null;
+  
+  const applyChanges = () => {
     const updatedHtml = applyOptimizationsToHTML(originalHtml, optimizationSuggestions);
     onApplySuggestion(updatedHtml);
   };
 
-  if (isLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Page Optimization</CardTitle>
-          <CardDescription>Analyzing landing page...</CardDescription>
-        </CardHeader>
-        <CardContent className="min-h-[300px] flex items-center justify-center">
-          <div className="flex flex-col items-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary mb-4" />
-            <p className="text-sm text-muted-foreground">Generating AI-powered optimization suggestions</p>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (!optimizationSuggestions) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Page Optimization</CardTitle>
-          <CardDescription>No optimization data yet</CardDescription>
-        </CardHeader>
-        <CardContent className="min-h-[300px] flex items-center justify-center">
-          <p className="text-sm text-muted-foreground">
-            Click "Generate Optimization Suggestions" to analyze your landing page
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
-
+  // Calculate total potential improvement
+  const trafficEstimateImprovement = optimizationSuggestions.trafficEstimate ? 
+    parseFloat(optimizationSuggestions.trafficEstimate.potential.replace('%', '')) - 
+    parseFloat(optimizationSuggestions.trafficEstimate.current.replace('%', '')) : 
+    0;
+  
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center">
-          <Sparkles className="h-5 w-5 text-primary mr-2" />
-          Page Optimization Suggestions
-        </CardTitle>
-        <CardDescription>
-          Apply suggested changes to improve conversion rates and performance
-        </CardDescription>
-      </CardHeader>
+    <div className="space-y-4">
+      {suggestionHistory.length > 0 && onSelectFromHistory && (
+        <div className="flex gap-2 overflow-x-auto pb-2">
+          {suggestionHistory.map((_, index) => (
+            <Button
+              key={index}
+              variant="outline"
+              size="sm"
+              onClick={() => onSelectFromHistory(index)}
+              className="whitespace-nowrap"
+            >
+              Version {index + 1}
+            </Button>
+          ))}
+        </div>
+      )}
       
-      <CardContent className="space-y-6">
-        {/* Traffic Estimate */}
-        {optimizationSuggestions.trafficEstimate && (
-          <Card>
-            <CardHeader className="py-2 px-4">
-              <CardTitle className="text-sm flex items-center">
-                <TrendingUp className="h-4 w-4 text-primary mr-2" />
-                Traffic Conversion Potential
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="py-2 px-4">
-              <div className="flex items-center mb-2">
-                <div className="w-full">
-                  <div className="flex justify-between text-sm mb-1">
-                    <span>Current: {optimizationSuggestions.trafficEstimate.current}</span>
-                    <span>Potential: {optimizationSuggestions.trafficEstimate.potential}</span>
-                  </div>
-                  <Progress 
-                    value={parseFloat(optimizationSuggestions.trafficEstimate.potential.replace('%', ''))} 
-                    max={100}
-                    className="h-2"
-                  />
-                </div>
+      <Card className="border-green-100">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg flex items-center">
+              <BarChart2 className="mr-2 h-5 w-5 text-green-500" />
+              Traffic Potential
+            </CardTitle>
+            <Badge variant={trafficEstimateImprovement > 5 ? "success" : "outline"}>
+              +{trafficEstimateImprovement.toFixed(1)}% Potential Improvement
+            </Badge>
+          </div>
+          <CardDescription>
+            Estimated traffic increase based on these optimization suggestions
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {optimizationSuggestions.trafficEstimate && (
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <div>
+                <div className="text-sm font-medium text-muted-foreground mb-1">Current</div>
+                <div className="text-2xl font-bold">{optimizationSuggestions.trafficEstimate.current}</div>
               </div>
-              <div className="flex justify-end mt-1">
-                <Badge variant="outline" className="text-xs">
-                  Confidence: {optimizationSuggestions.trafficEstimate.confidence}
-                </Badge>
+              <div>
+                <div className="text-sm font-medium text-muted-foreground mb-1">Potential</div>
+                <div className="text-2xl font-bold text-green-600">{optimizationSuggestions.trafficEstimate.potential}</div>
               </div>
-            </CardContent>
-          </Card>
-        )}
+              <div>
+                <div className="text-sm font-medium text-muted-foreground mb-1">Confidence</div>
+                <div className="capitalize">{optimizationSuggestions.trafficEstimate.confidence}</div>
+              </div>
+            </div>
+          )}
+          
+          <Button
+            onClick={applyChanges}
+            className="w-full mt-4"
+          >
+            Apply All Suggestions
+          </Button>
+        </CardContent>
+      </Card>
+      
+      <Tabs value={activeCategory} onValueChange={setActiveCategory} className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="all">All</TabsTrigger>
+          <TabsTrigger value="headline">Headlines</TabsTrigger>
+          <TabsTrigger value="content">Content</TabsTrigger>
+          <TabsTrigger value="keywords">Keywords</TabsTrigger>
+        </TabsList>
         
-        <Accordion type="single" collapsible className="w-full">
-          {/* Headline Optimization */}
+        <TabsContent value="all" className="space-y-4 mt-4">
+          {/* Headline */}
           {optimizationSuggestions.headline && (
-            <AccordionItem value="headline">
-              <AccordionTrigger className="text-base font-medium">
-                Headline Optimization
-              </AccordionTrigger>
-              <AccordionContent>
-                <div className="space-y-3 pl-2">
-                  <div className="text-sm text-muted-foreground">
-                    <span className="font-medium text-foreground">Original: </span>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center">
+                  <Lightbulb className="mr-2 h-4 w-4 text-amber-500" />
+                  Headline Optimization
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="text-sm text-muted-foreground">Original:</div>
+                  <div className="p-2 border rounded bg-gray-50 text-sm">
                     {optimizationSuggestions.headline.original}
                   </div>
-                  <div className="text-sm">
-                    <span className="font-medium">Suggested: </span>
-                    <span className="text-primary">{optimizationSuggestions.headline.suggested}</span>
+                  
+                  <div className="text-sm text-muted-foreground mt-3">Suggested:</div>
+                  <div className="p-2 border border-green-200 rounded bg-green-50 text-sm">
+                    {optimizationSuggestions.headline.suggested}
                   </div>
-                  <div className="text-sm bg-muted/30 p-2 rounded">
-                    <span className="font-medium">Reason: </span>
-                    {optimizationSuggestions.headline.reason}
+                  
+                  <div className="text-sm mt-2 flex items-start">
+                    <CircleCheck className="h-4 w-4 mr-1 text-green-500 mt-0.5 flex-shrink-0" />
+                    <span>{optimizationSuggestions.headline.reason}</span>
                   </div>
-                  <div className="flex justify-end">
-                    <Button 
-                      size="sm" 
-                      onClick={() => handleApplySuggestion('headline')}
-                      className="mt-2"
-                    >
-                      Apply Change <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </div>
+                  
+                  <Button
+                    onClick={applyChanges}
+                    size="sm"
+                    className="mt-2"
+                  >
+                    Apply Change
+                  </Button>
                 </div>
-              </AccordionContent>
-            </AccordionItem>
+              </CardContent>
+            </Card>
           )}
           
-          {/* CTA Optimization */}
+          {/* CTA */}
           {optimizationSuggestions.cta && (
-            <AccordionItem value="cta">
-              <AccordionTrigger className="text-base font-medium">
-                Call-to-Action Optimization
-              </AccordionTrigger>
-              <AccordionContent>
-                <div className="space-y-3 pl-2">
-                  <div className="text-sm text-muted-foreground">
-                    <span className="font-medium text-foreground">Original: </span>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center">
+                  <Lightbulb className="mr-2 h-4 w-4 text-amber-500" />
+                  Call-to-Action Optimization
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="text-sm text-muted-foreground">Original:</div>
+                  <div className="p-2 border rounded bg-gray-50 text-sm">
                     {optimizationSuggestions.cta.original}
                   </div>
-                  <div className="text-sm">
-                    <span className="font-medium">Suggested: </span>
-                    <span className="text-primary">{optimizationSuggestions.cta.suggested}</span>
+                  
+                  <div className="text-sm text-muted-foreground mt-3">Suggested:</div>
+                  <div className="p-2 border border-green-200 rounded bg-green-50 text-sm">
+                    {optimizationSuggestions.cta.suggested}
                   </div>
-                  <div className="text-sm bg-muted/30 p-2 rounded">
-                    <span className="font-medium">Reason: </span>
-                    {optimizationSuggestions.cta.reason}
+                  
+                  <div className="text-sm mt-2 flex items-start">
+                    <CircleCheck className="h-4 w-4 mr-1 text-green-500 mt-0.5 flex-shrink-0" />
+                    <span>{optimizationSuggestions.cta.reason}</span>
                   </div>
-                  <div className="flex justify-end">
-                    <Button 
-                      size="sm" 
-                      onClick={() => handleApplySuggestion('cta')}
-                      className="mt-2"
-                    >
-                      Apply Change <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </div>
+                  
+                  <Button
+                    onClick={applyChanges}
+                    size="sm"
+                    className="mt-2"
+                  >
+                    Apply Change
+                  </Button>
                 </div>
-              </AccordionContent>
-            </AccordionItem>
+              </CardContent>
+            </Card>
           )}
           
-          {/* Content Optimizations */}
+          {/* Content Sections */}
           {optimizationSuggestions.content && optimizationSuggestions.content.length > 0 && (
-            <AccordionItem value="content">
-              <AccordionTrigger className="text-base font-medium">
-                Content Optimizations ({optimizationSuggestions.content.length})
-              </AccordionTrigger>
-              <AccordionContent>
-                {optimizationSuggestions.content.map((content, index) => (
-                  <div key={index} className="mb-6 border-l-2 border-primary/30 pl-4">
-                    <p className="font-medium text-sm mb-2">{content.section}</p>
-                    <div className="space-y-3">
-                      <div className="text-sm text-muted-foreground">
-                        <span className="font-medium text-foreground">Original: </span>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center">
+                  <Lightbulb className="mr-2 h-4 w-4 text-amber-500" />
+                  Content Improvements
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {optimizationSuggestions.content.map((content, index) => (
+                    <div key={index} className="space-y-2 pb-3 border-b last:border-0">
+                      <div className="font-medium">{content.section}</div>
+                      
+                      <div className="text-sm text-muted-foreground">Original:</div>
+                      <div className="p-2 border rounded bg-gray-50 text-sm">
                         {content.original}
                       </div>
-                      <div className="text-sm">
-                        <span className="font-medium">Suggested: </span>
-                        <span className="text-primary">{content.suggested}</span>
+                      
+                      <div className="text-sm text-muted-foreground mt-3">Suggested:</div>
+                      <div className="p-2 border border-green-200 rounded bg-green-50 text-sm">
+                        {content.suggested}
                       </div>
-                      <div className="text-sm bg-muted/30 p-2 rounded">
-                        <span className="font-medium">Reason: </span>
-                        {content.reason}
-                      </div>
-                      <div className="flex justify-end">
-                        <Button 
-                          size="sm" 
-                          onClick={() => handleApplySuggestion('content', index)}
-                          className="mt-2"
-                        >
-                          Apply Change <ArrowRight className="ml-2 h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </AccordionContent>
-            </AccordionItem>
-          )}
-          
-          {/* Structural Suggestions */}
-          {optimizationSuggestions.structure && optimizationSuggestions.structure.length > 0 && (
-            <AccordionItem value="structure">
-              <AccordionTrigger className="text-base font-medium">
-                Structural Improvements ({optimizationSuggestions.structure.length})
-              </AccordionTrigger>
-              <AccordionContent>
-                <div className="space-y-4">
-                  {optimizationSuggestions.structure.map((item, index) => (
-                    <div key={index} className="flex items-start gap-3 pl-2">
-                      <Circle className="h-4 w-4 text-primary mt-1 flex-shrink-0" />
-                      <div>
-                        <p className="text-sm font-medium">{item.suggestion}</p>
-                        <p className="text-xs text-muted-foreground mt-1">{item.reason}</p>
+                      
+                      <div className="text-sm mt-2 flex items-start">
+                        <CircleCheck className="h-4 w-4 mr-1 text-green-500 mt-0.5 flex-shrink-0" />
+                        <span>{content.reason}</span>
                       </div>
                     </div>
                   ))}
+                  
+                  <Button
+                    onClick={applyChanges}
+                    size="sm"
+                  >
+                    Apply All Content Changes
+                  </Button>
                 </div>
-              </AccordionContent>
-            </AccordionItem>
+              </CardContent>
+            </Card>
           )}
           
-          {/* Keyword Recommendations */}
+          {/* Keywords */}
           {optimizationSuggestions.keywords && optimizationSuggestions.keywords.length > 0 && (
-            <AccordionItem value="keywords">
-              <AccordionTrigger className="text-base font-medium">
-                Recommended Keywords ({optimizationSuggestions.keywords.length})
-              </AccordionTrigger>
-              <AccordionContent>
-                <div className="space-y-3">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center">
+                  <Lightbulb className="mr-2 h-4 w-4 text-amber-500" />
+                  Keyword Recommendations
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
                   <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead className="text-xs text-muted-foreground border-b">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
                         <tr>
-                          <th className="py-2 px-3 text-left">Keyword</th>
-                          <th className="py-2 px-3 text-left">Relevance</th>
-                          <th className="py-2 px-3 text-left">Traffic Potential</th>
-                          <th className="py-2 px-3 text-left">Difficulty</th>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Keyword</th>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Relevance</th>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Traffic</th>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Difficulty</th>
                         </tr>
                       </thead>
-                      <tbody>
+                      <tbody className="bg-white divide-y divide-gray-200">
                         {optimizationSuggestions.keywords.map((keyword, index) => (
-                          <tr key={index} className="border-b last:border-b-0">
-                            <td className="py-2 px-3 font-medium">{keyword.keyword}</td>
-                            <td className="py-2 px-3">
+                          <tr key={index}>
+                            <td className="px-3 py-2 text-sm">{keyword.keyword}</td>
+                            <td className="px-3 py-2">
                               <Badge variant={
-                                keyword.relevance === "high" ? "default" :
-                                keyword.relevance === "medium" ? "outline" : "secondary"
-                              } className="rounded-sm">
-                                {keyword.relevance}
-                              </Badge>
+                                keyword.relevance === 'high' ? 'success' :
+                                keyword.relevance === 'medium' ? 'warning' : 'outline'
+                              }>{keyword.relevance}</Badge>
                             </td>
-                            <td className="py-2 px-3">
-                              <div className="flex items-center">
-                                <Progress className="h-2 w-16 mr-2" 
-                                  value={keyword.trafficPotential} 
-                                  max={100} 
-                                />
-                                <span>{keyword.trafficPotential}</span>
-                              </div>
-                            </td>
-                            <td className="py-2 px-3">
-                              <div className="flex items-center">
-                                <Progress className="h-2 w-16 mr-2" 
-                                  value={keyword.difficulty} 
-                                  max={100} 
-                                />
-                                <span>{keyword.difficulty}</span>
-                              </div>
-                            </td>
+                            <td className="px-3 py-2 text-sm">{keyword.trafficPotential}</td>
+                            <td className="px-3 py-2 text-sm">{keyword.difficulty}/100</td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
                   </div>
                 </div>
-              </AccordionContent>
-            </AccordionItem>
+              </CardContent>
+            </Card>
           )}
-        </Accordion>
-      </CardContent>
-      
-      <CardFooter className="flex justify-between">
-        <Button variant="outline">
-          <CheckCircle className="mr-2 h-4 w-4" /> My Changes
-        </Button>
-        <Button onClick={handleApplyAll}>
-          Apply All Suggestions
-        </Button>
-      </CardFooter>
-    </Card>
+          
+          {/* Structure */}
+          {optimizationSuggestions.structure && optimizationSuggestions.structure.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center">
+                  <Lightbulb className="mr-2 h-4 w-4 text-amber-500" />
+                  Structure Recommendations
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {optimizationSuggestions.structure.map((structure, index) => (
+                    <div key={index} className="flex items-start py-2 border-b last:border-0">
+                      <ArrowUpRight className="h-4 w-4 mr-2 text-blue-500 mt-0.5" />
+                      <div>
+                        <div className="font-medium">{structure.suggestion}</div>
+                        <div className="text-sm text-muted-foreground">{structure.reason}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="headline" className="space-y-4 mt-4">
+          {optimizationSuggestions.headline ? (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center">
+                  <Lightbulb className="mr-2 h-4 w-4 text-amber-500" />
+                  Headline Optimization
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="text-sm text-muted-foreground">Original:</div>
+                  <div className="p-2 border rounded bg-gray-50 text-sm">
+                    {optimizationSuggestions.headline.original}
+                  </div>
+                  
+                  <div className="text-sm text-muted-foreground mt-3">Suggested:</div>
+                  <div className="p-2 border border-green-200 rounded bg-green-50 text-sm">
+                    {optimizationSuggestions.headline.suggested}
+                  </div>
+                  
+                  <div className="text-sm mt-2 flex items-start">
+                    <CircleCheck className="h-4 w-4 mr-1 text-green-500 mt-0.5 flex-shrink-0" />
+                    <span>{optimizationSuggestions.headline.reason}</span>
+                  </div>
+                  
+                  <Button
+                    onClick={applyChanges}
+                    size="sm"
+                    className="mt-2"
+                  >
+                    Apply Change
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              No headline optimization suggestions available.
+            </div>
+          )}
+          
+          {optimizationSuggestions.cta && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center">
+                  <Lightbulb className="mr-2 h-4 w-4 text-amber-500" />
+                  Call-to-Action Optimization
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="text-sm text-muted-foreground">Original:</div>
+                  <div className="p-2 border rounded bg-gray-50 text-sm">
+                    {optimizationSuggestions.cta.original}
+                  </div>
+                  
+                  <div className="text-sm text-muted-foreground mt-3">Suggested:</div>
+                  <div className="p-2 border border-green-200 rounded bg-green-50 text-sm">
+                    {optimizationSuggestions.cta.suggested}
+                  </div>
+                  
+                  <div className="text-sm mt-2 flex items-start">
+                    <CircleCheck className="h-4 w-4 mr-1 text-green-500 mt-0.5 flex-shrink-0" />
+                    <span>{optimizationSuggestions.cta.reason}</span>
+                  </div>
+                  
+                  <Button
+                    onClick={applyChanges}
+                    size="sm"
+                    className="mt-2"
+                  >
+                    Apply Change
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="content" className="space-y-4 mt-4">
+          {optimizationSuggestions.content && optimizationSuggestions.content.length > 0 ? (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center">
+                  <Lightbulb className="mr-2 h-4 w-4 text-amber-500" />
+                  Content Improvements
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {optimizationSuggestions.content.map((content, index) => (
+                    <div key={index} className="space-y-2 pb-3 border-b last:border-0">
+                      <div className="font-medium">{content.section}</div>
+                      
+                      <div className="text-sm text-muted-foreground">Original:</div>
+                      <div className="p-2 border rounded bg-gray-50 text-sm">
+                        {content.original}
+                      </div>
+                      
+                      <div className="text-sm text-muted-foreground mt-3">Suggested:</div>
+                      <div className="p-2 border border-green-200 rounded bg-green-50 text-sm">
+                        {content.suggested}
+                      </div>
+                      
+                      <div className="text-sm mt-2 flex items-start">
+                        <CircleCheck className="h-4 w-4 mr-1 text-green-500 mt-0.5 flex-shrink-0" />
+                        <span>{content.reason}</span>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  <Button
+                    onClick={applyChanges}
+                    size="sm"
+                  >
+                    Apply All Content Changes
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              No content optimization suggestions available.
+            </div>
+          )}
+          
+          {optimizationSuggestions.structure && optimizationSuggestions.structure.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center">
+                  <Lightbulb className="mr-2 h-4 w-4 text-amber-500" />
+                  Structure Recommendations
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {optimizationSuggestions.structure.map((structure, index) => (
+                    <div key={index} className="flex items-start py-2 border-b last:border-0">
+                      <ArrowUpRight className="h-4 w-4 mr-2 text-blue-500 mt-0.5" />
+                      <div>
+                        <div className="font-medium">{structure.suggestion}</div>
+                        <div className="text-sm text-muted-foreground">{structure.reason}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="keywords" className="space-y-4 mt-4">
+          {optimizationSuggestions.keywords && optimizationSuggestions.keywords.length > 0 ? (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center">
+                  <Lightbulb className="mr-2 h-4 w-4 text-amber-500" />
+                  Keyword Recommendations
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Keyword</th>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Relevance</th>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Traffic</th>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Difficulty</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {optimizationSuggestions.keywords.map((keyword, index) => (
+                          <tr key={index}>
+                            <td className="px-3 py-2 text-sm">{keyword.keyword}</td>
+                            <td className="px-3 py-2">
+                              <Badge variant={
+                                keyword.relevance === 'high' ? 'success' :
+                                keyword.relevance === 'medium' ? 'warning' : 'outline'
+                              }>{keyword.relevance}</Badge>
+                            </td>
+                            <td className="px-3 py-2 text-sm">{keyword.trafficPotential}</td>
+                            <td className="px-3 py-2 text-sm">{keyword.difficulty}/100</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              No keyword optimization suggestions available.
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 };
 
