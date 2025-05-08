@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
@@ -40,15 +39,10 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
+
+// This was causing the deep type instantiation error
+// Using a type alias instead of a direct reference to the form object
+import type { UseFormReturn } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -111,6 +105,15 @@ const LAYOUT_OPTIONS = [
   "Full-Width Image Banner"
 ];
 
+// Define metadata type separately to avoid deep nesting issues
+interface PageMetadata {
+  generatedContent?: unknown;
+  themeOptions?: ThemeOption[];
+  selectedThemeIndex?: number;
+  mediaType?: string;
+  layoutStyle?: string;
+}
+
 // Define our custom database schema for landing pages
 interface LandingPageData {
   audience: string;
@@ -127,15 +130,6 @@ interface LandingPageData {
   user_id: string;
   status?: string;
   metadata?: PageMetadata | null;
-}
-
-// Metadata type to avoid deep nesting
-interface PageMetadata {
-  generatedContent?: unknown;
-  themeOptions?: ThemeOption[];
-  selectedThemeIndex?: number;
-  mediaType?: string;
-  layoutStyle?: string;
 }
 
 // Form values type
@@ -169,15 +163,14 @@ const LandingPageCreator = () => {
     },
   });
   
-  // Use a ref for form to prevent circular dependencies
-  const formRef = useRef(form);
+  // Using ref to avoid TypeScript deep instantiation error
+  const formRef = useRef<UseFormReturn<FormValues>>(form);
   useEffect(() => {
     formRef.current = form;
   }, [form]);
 
-  // Auto-save draft periodically
+  // Auto-save draft periodically with interval to avoid dependency cycle
   useEffect(() => {
-    // Using a simple timer instead of watching form values
     const autoSaveInterval = window.setInterval(() => {
       const currentForm = formRef.current;
       const currentValues = currentForm.getValues();
@@ -563,7 +556,7 @@ const LandingPageCreator = () => {
     autoSaveDraft(form.getValues());
   };
 
-  // Function to render form content
+  // Function to render form content - Updated to match the design in the image
   const renderFormContent = () => (
     <Card className="shadow-lg border-primary/10 animate-fade-in">
       <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/5">
@@ -806,133 +799,125 @@ const LandingPageCreator = () => {
     </Card>
   );
 
-  // Function to render preview content
+  // Function to render preview content - Updated to match the design in the image
   const renderPreviewContent = () => (
-    <ResizablePanelGroup
-      direction="horizontal"
-      className="min-h-[700px] rounded-lg border"
-    >
-      {/* Controls Panel - 40% width */}
-      <ResizablePanel defaultSize={40} minSize={30}>
-        <div className="h-full flex flex-col">
-          <div className="p-4 border-b bg-muted/20">
-            <h2 className="text-lg font-semibold text-primary">Edit & Optimize</h2>
-          </div>
-          <div className="flex-1 overflow-auto p-4 space-y-4">
+    <div className="grid grid-cols-12 gap-6">
+      {/* Controls Panel - 7 columns (left side) */}
+      <div className="col-span-7">
+        <div className="space-y-6">
+          {/* Page Controls Card */}
+          <Card className="shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Page Controls</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Button 
+                variant="outline" 
+                className="w-full justify-start hover:bg-primary/5 transition-all"
+                onClick={regenerateContent}
+                disabled={generatingPage}
+              >
+                <FileText className="mr-2 h-4 w-4 text-primary" />
+                Regenerate Content
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                className="w-full justify-start hover:bg-primary/5 transition-all"
+                onClick={regenerateTheme}
+                disabled={generatingPage}
+              >
+                <Palette className="mr-2 h-4 w-4 text-primary" />
+                Try Different Design
+              </Button>
+              
+              <Button
+                variant={showOptimizer ? "secondary" : "outline"}
+                className="w-full justify-start"
+                onClick={toggleOptimizer}
+                disabled={generatingPage}
+              >
+                <Sparkles className="mr-2 h-4 w-4 text-primary" />
+                {showOptimizer ? "Hide AI Optimizer" : "AI Optimizer"}
+              </Button>
+              
+              <Button 
+                className="w-full justify-start"
+                onClick={handleSavePage}
+                disabled={generatingPage}
+              >
+                {generatingPage ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="mr-2 h-4 w-4" />
+                )}
+                Save Landing Page
+              </Button>
+            </CardContent>
+          </Card>
+          
+          {/* AI Optimizer */}
+          {showOptimizer && (
+            <DynamicLandingPageOptimizer 
+              htmlContent={previewHtml}
+              pageInfo={{
+                title: form.getValues("title"),
+                audience: form.getValues("audience"),
+                industry: form.getValues("industry"),
+                campaign_type: form.getValues("campaign_type"),
+                keywords: form.getValues("keywords")
+                  .split(",")
+                  .map(keyword => keyword.trim())
+                  .filter(keyword => keyword.length > 0)
+              }}
+              onApplyChanges={handleApplyOptimizations}
+            />
+          )}
+          
+          {/* AI-Suggested Keywords Card */}
+          {typeof generatedContent === 'object' && 
+           generatedContent !== null && 
+           'keywordSuggestions' in generatedContent && 
+           Array.isArray(generatedContent.keywordSuggestions) && 
+           generatedContent.keywordSuggestions.length > 0 && (
             <Card className="shadow-sm">
               <CardHeader className="pb-2">
-                <CardTitle className="text-lg">Page Controls</CardTitle>
+                <CardTitle className="text-lg">AI-Suggested Keywords</CardTitle>
+                <CardDescription>
+                  Additional keywords that could improve page performance
+                </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start hover:bg-primary/5 transition-all"
-                  onClick={regenerateContent}
-                  disabled={generatingPage}
-                >
-                  <FileText className="mr-2 h-4 w-4 text-primary" />
-                  Regenerate Content
-                </Button>
-                
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start hover:bg-primary/5 transition-all"
-                  onClick={regenerateTheme}
-                  disabled={generatingPage}
-                >
-                  <Palette className="mr-2 h-4 w-4 text-primary" />
-                  Try Different Design
-                </Button>
-                
-                <Button
-                  variant={showOptimizer ? "secondary" : "outline"}
-                  className="w-full justify-start"
-                  onClick={toggleOptimizer}
-                  disabled={generatingPage}
-                >
-                  <Sparkles className="mr-2 h-4 w-4 text-primary" />
-                  {showOptimizer ? "Hide AI Optimizer" : "AI Optimizer"}
-                </Button>
-                
-                <Button 
-                  className="w-full justify-start"
-                  onClick={handleSavePage}
-                  disabled={generatingPage}
-                >
-                  {generatingPage ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Save className="mr-2 h-4 w-4" />
-                  )}
-                  Save Landing Page
-                </Button>
+              <CardContent>
+                <div className="flex flex-wrap gap-2">
+                  {(generatedContent.keywordSuggestions as string[]).map((keyword, index) => (
+                    <div key={index} className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
+                      {keyword}
+                    </div>
+                  ))}
+                </div>
               </CardContent>
             </Card>
-            
-            {showOptimizer && (
-              <DynamicLandingPageOptimizer 
-                htmlContent={previewHtml}
-                pageInfo={{
-                  title: form.getValues("title"),
-                  audience: form.getValues("audience"),
-                  industry: form.getValues("industry"),
-                  campaign_type: form.getValues("campaign_type"),
-                  keywords: form.getValues("keywords")
-                    .split(",")
-                    .map(keyword => keyword.trim())
-                    .filter(keyword => keyword.length > 0)
-                }}
-                onApplyChanges={handleApplyOptimizations}
-              />
-            )}
-            
-            {typeof generatedContent === 'object' && 
-             generatedContent !== null && 
-             'keywordSuggestions' in generatedContent && 
-             Array.isArray(generatedContent.keywordSuggestions) && 
-             generatedContent.keywordSuggestions.length > 0 && (
-              <Card className="shadow-sm">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg">AI-Suggested Keywords</CardTitle>
-                  <CardDescription>
-                    Additional keywords that could improve page performance
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-wrap gap-2">
-                    {(generatedContent.keywordSuggestions as string[]).map((keyword, index) => (
-                      <div key={index} className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
-                        {keyword}
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
+          )}
         </div>
-      </ResizablePanel>
+      </div>
 
-      <ResizableHandle withHandle />
-
-      {/* Preview Panel - 60% width */}
-      <ResizablePanel defaultSize={60} minSize={40}>
-        <div className="h-full flex flex-col">
-          <div className="p-4 border-b bg-muted/20 flex justify-between items-center">
-            <h2 className="text-lg font-semibold text-primary">Preview</h2>
+      {/* Preview Panel - 5 columns (right side) */}
+      <div className="col-span-5">
+        <Card className="h-full">
+          <CardHeader className="bg-muted/20 border-b flex flex-row justify-between items-center py-3 px-4">
+            <CardTitle className="text-lg font-semibold text-primary">Preview</CardTitle>
             <span className="text-xs text-muted-foreground px-2 py-1 bg-primary/5 rounded-full">Live Preview</span>
-          </div>
-          <div className="flex-1 overflow-auto bg-white">
+          </CardHeader>
+          <CardContent className="p-0 h-[600px] overflow-hidden bg-white">
             <iframe
               title="Landing Page Preview"
               srcDoc={previewHtml}
               className="w-full h-full border-0"
-              style={{minHeight: "600px"}}
             />
-          </div>
-        </div>
-      </ResizablePanel>
-    </ResizablePanelGroup>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 
   return (
