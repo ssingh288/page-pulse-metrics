@@ -166,23 +166,16 @@ const LandingPageCreator = () => {
 
   // Auto-save draft when form values change
   useEffect(() => {
-    // Fix: Use a subscription with a callback that doesn't create circular type issues
-    const subscription = form.watch(() => {
-      // Get current values
+    // Fix: Replace form.watch with a simpler implementation to avoid circular reference
+    const autoSaveDebounced = setTimeout(() => {
       const currentValues = form.getValues();
-      
-      // Only attempt to auto-save if at least the title is set
       if (currentValues.title && currentValues.title.length >= 3) {
-        const timer = setTimeout(() => {
-          autoSaveDraft(currentValues);
-        }, 5000); // Wait 5 seconds after changes before saving
-        
-        return () => clearTimeout(timer);
+        autoSaveDraft(currentValues);
       }
-    });
+    }, 5000);
     
-    return () => subscription.unsubscribe();
-  }, [form]);
+    return () => clearTimeout(autoSaveDebounced);
+  }, [form.watch()]);
   
   // Check for existing drafts when component mounts
   useEffect(() => {
