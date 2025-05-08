@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
@@ -110,6 +109,29 @@ const LAYOUT_OPTIONS = [
   "Full-Width Image Banner"
 ];
 
+// Define our custom database schema for landing pages
+interface LandingPageData {
+  audience: string;
+  campaign_type: string;
+  created_at: string;
+  html_content: string | null;
+  id: string;
+  industry: string;
+  initial_keywords: string[];
+  published_at: string | null;
+  published_url: string | null;
+  title: string;
+  updated_at: string;
+  user_id: string;
+  metadata?: {
+    generatedContent?: any;
+    themeOptions?: any[];
+    selectedThemeIndex?: number;
+    mediaType?: string;
+    layoutStyle?: string;
+  };
+}
+
 const LandingPageCreator = () => {
   const [generatingPage, setGeneratingPage] = useState(false);
   const [previewHtml, setPreviewHtml] = useState("");
@@ -176,7 +198,7 @@ const LandingPageCreator = () => {
       }
       
       if (data && data.length > 0) {
-        const draft = data[0];
+        const draft = data[0] as LandingPageData;
         setDraftId(draft.id);
         
         // Populate form with draft data
@@ -324,9 +346,7 @@ const LandingPageCreator = () => {
         values.audience, 
         values.industry, 
         values.campaign_type,
-        keywordsArray,
-        mediaType,
-        layoutStyle
+        keywordsArray
       );
       
       // Store the generated content and theme options
@@ -339,9 +359,7 @@ const LandingPageCreator = () => {
         values.audience,
         keywordsArray,
         themeOptions[0],
-        content,
-        mediaType,
-        layoutStyle
+        content
       );
       
       // Show preview of the generated page
@@ -468,9 +486,7 @@ const LandingPageCreator = () => {
       values.audience, 
       values.industry, 
       values.campaign_type,
-      keywordsArray,
-      mediaType,
-      layoutStyle
+      keywordsArray
     );
     
     setGeneratedContent(content);
@@ -481,9 +497,7 @@ const LandingPageCreator = () => {
       values.audience,
       keywordsArray,
       themeOptions[selectedThemeIndex],
-      content,
-      mediaType,
-      layoutStyle
+      content
     );
     
     // Show preview of the regenerated page
@@ -512,9 +526,7 @@ const LandingPageCreator = () => {
       values.audience,
       keywordsArray,
       themeOptions[nextThemeIndex],
-      generatedContent,
-      mediaType,
-      layoutStyle
+      generatedContent
     );
     
     // Show preview of the regenerated page
