@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
@@ -50,7 +51,7 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { generateLandingPageContent, generateEnhancedHtml } from "@/utils/landingPageGenerator";
+import { generateLandingPageContent, generateEnhancedHtml, ThemeOption } from "@/utils/landingPageGenerator";
 import DynamicLandingPageOptimizer from "@/components/DynamicLandingPageOptimizer";
 
 // Create form schema
@@ -123,14 +124,18 @@ interface LandingPageData {
   title: string;
   updated_at: string;
   user_id: string;
+  status?: string;
   metadata?: {
     generatedContent?: any;
-    themeOptions?: any[];
+    themeOptions?: ThemeOption[];
     selectedThemeIndex?: number;
     mediaType?: string;
     layoutStyle?: string;
   };
 }
+
+// Fix the type issue by making a simpler type for form values
+type FormValues = z.infer<typeof formSchema>;
 
 const LandingPageCreator = () => {
   const [generatingPage, setGeneratingPage] = useState(false);
@@ -166,7 +171,7 @@ const LandingPageCreator = () => {
       // Only attempt to auto-save if at least the title is set
       if (value.title && value.title.length >= 3) {
         const timer = setTimeout(() => {
-          autoSaveDraft(value as z.infer<typeof formSchema>);
+          autoSaveDraft(value as FormValues);
         }, 5000); // Wait 5 seconds after changes before saving
         
         return () => clearTimeout(timer);

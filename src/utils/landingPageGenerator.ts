@@ -407,7 +407,7 @@ export function generateEnhancedHtml(
                 ${index + 1}
               </div>
               <h3 class="text-xl font-bold mb-2">${feature}</h3>
-              <p>Enhance your ${industry} experience with our cutting-edge solutions.</p>
+              <p>Enhance your experience with our cutting-edge solutions.</p>
             </div>
           `).join('')}
         </div>
@@ -456,7 +456,7 @@ export function generateEnhancedHtml(
     <section id="signup" class="py-16 bg-primary text-white">
       <div class="container text-center space-y-6">
         <h2 class="text-3xl font-bold">Ready to Get Started?</h2>
-        <p class="text-xl max-w-2xl mx-auto">Join thousands of satisfied ${audience} who have transformed their ${industry} approach.</p>
+        <p class="text-xl max-w-2xl mx-auto">Join thousands of satisfied users who have transformed their approach.</p>
         <form class="max-w-md mx-auto">
           <div class="flex flex-col md:flex-row gap-4">
             <input type="email" placeholder="Enter your email" class="flex-1 px-4 py-3 rounded text-black" required />
@@ -475,7 +475,7 @@ export function generateEnhancedHtml(
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
             <h3 class="text-xl font-bold mb-4">About Us</h3>
-            <p>We are dedicated to providing the best ${industry} solutions for ${audience}.</p>
+            <p>We are dedicated to providing the best solutions for you.</p>
           </div>
           <div>
             <h3 class="text-xl font-bold mb-4">Quick Links</h3>
