@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -124,14 +124,17 @@ interface LandingPageData {
   updated_at: string;
   user_id: string;
   status?: string;
-  metadata?: {
-    generatedContent?: any;
-    themeOptions?: ThemeOption[];
-    selectedThemeIndex?: number;
-    mediaType?: string;
-    layoutStyle?: string;
-  };
+  metadata?: PageMetadata | string;
 }
+
+// Simplified metadata type to avoid deep nesting
+type PageMetadata = {
+  generatedContent?: any;
+  themeOptions?: ThemeOption[];
+  selectedThemeIndex?: number;
+  mediaType?: string;
+  layoutStyle?: string;
+};
 
 // Fix the type issue by making a simpler type for form values
 type FormValues = z.infer<typeof formSchema>;
@@ -163,19 +166,24 @@ const LandingPageCreator = () => {
       keywords: ""
     },
   });
+  
+  // Track form instance with a ref to avoid circular references
+  const formRef = useRef(form);
+  formRef.current = form;
 
-  // Auto-save draft when form values change - fixed to avoid circular reference
+  // Auto-save draft periodically instead of watching form values
   useEffect(() => {
-    // Create a timer that runs periodically to check for changes
-    const autoSaveTimer = setTimeout(() => {
-      const currentValues = form.getValues();
+    const autoSaveTimer = setInterval(() => {
+      const currentForm = formRef.current;
+      const currentValues = currentForm.getValues();
+      
       if (currentValues.title && currentValues.title.length >= 3) {
         autoSaveDraft(currentValues);
       }
     }, 5000);
     
-    return () => clearTimeout(autoSaveTimer);
-  }, [form]); // Only depend on form instance, not its methods
+    return () => clearInterval(autoSaveTimer);
+  }, []); // No dependencies to avoid type issues
   
   // Check for existing drafts when component mounts
   useEffect(() => {
@@ -266,13 +274,13 @@ const LandingPageCreator = () => {
         .map(keyword => keyword.trim())
         .filter(keyword => keyword.length > 0);
       
-      // Prepare metadata to store
-      const metadata = {
-        generatedContent: generatedContent,
-        themeOptions: themeOptions,
-        selectedThemeIndex: selectedThemeIndex,
-        mediaType: mediaType,
-        layoutStyle: layoutStyle
+      // Prepare metadata to store - simplified to avoid deep nesting
+      const metadata: PageMetadata = {
+        generatedContent,
+        themeOptions,
+        selectedThemeIndex,
+        mediaType,
+        layoutStyle
       };
       
       if (draftId) {
@@ -287,7 +295,7 @@ const LandingPageCreator = () => {
             initial_keywords: keywordsArray,
             html_content: previewHtml || null,
             status: 'draft',
-            metadata: metadata,
+            metadata,
             updated_at: new Date().toISOString()
           })
           .eq('id', draftId);
@@ -306,7 +314,7 @@ const LandingPageCreator = () => {
             initial_keywords: keywordsArray,
             html_content: previewHtml || null,
             status: 'draft',
-            metadata: metadata
+            metadata
           }])
           .select();
           
