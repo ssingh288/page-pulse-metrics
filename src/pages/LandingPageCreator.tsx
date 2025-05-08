@@ -789,8 +789,9 @@ const LandingPageCreator = () => {
           
           <TabsContent value="preview" className="space-y-4">
             {previewHtml && (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                <div className="lg:col-span-1 space-y-4">
+              <div className="grid grid-cols-12 gap-4">
+                {/* Controls Section - Now takes 5 columns */}
+                <div className="col-span-12 md:col-span-5 space-y-4">
                   <Card>
                     <CardHeader className="pb-2">
                       <CardTitle className="text-lg">Page Controls</CardTitle>
@@ -879,8 +880,9 @@ const LandingPageCreator = () => {
                   )}
                 </div>
                 
-                <div className="lg:col-span-2">
-                  <Card className="overflow-hidden">
+                {/* Preview Section - Now takes 7 columns for a narrower preview like in the image */}
+                <div className="col-span-12 md:col-span-7">
+                  <Card className="overflow-hidden h-full">
                     <CardHeader className="pb-2 border-b">
                       <CardTitle className="text-lg">Landing Page Preview</CardTitle>
                     </CardHeader>
