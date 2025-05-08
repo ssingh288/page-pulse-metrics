@@ -164,18 +164,18 @@ const LandingPageCreator = () => {
     },
   });
 
-  // Auto-save draft when form values change
+  // Auto-save draft when form values change - fixed to avoid circular reference
   useEffect(() => {
-    // Fix: Replace form.watch with a simpler implementation to avoid circular reference
-    const autoSaveDebounced = setTimeout(() => {
+    // Create a timer that runs periodically to check for changes
+    const autoSaveTimer = setTimeout(() => {
       const currentValues = form.getValues();
       if (currentValues.title && currentValues.title.length >= 3) {
         autoSaveDraft(currentValues);
       }
     }, 5000);
     
-    return () => clearTimeout(autoSaveDebounced);
-  }, [form.watch()]);
+    return () => clearTimeout(autoSaveTimer);
+  }, [form]); // Only depend on form instance, not its methods
   
   // Check for existing drafts when component mounts
   useEffect(() => {
