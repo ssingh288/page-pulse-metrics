@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
@@ -7,7 +8,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { Loader2, RefreshCw, Palette, FileText, Sparkles, Image, Video, Save } from "lucide-react";
+import { Loader2, RefreshCw, Palette, FileText, Sparkles, Image, Video, Save, ChevronRight } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -47,6 +48,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -124,28 +126,28 @@ interface LandingPageData {
   updated_at: string;
   user_id: string;
   status?: string;
-  metadata?: PageMetadata | string;
+  metadata?: PageMetadata | null;
 }
 
-// Simplified metadata type to avoid deep nesting
-type PageMetadata = {
-  generatedContent?: any;
+// Metadata type to avoid deep nesting
+interface PageMetadata {
+  generatedContent?: unknown;
   themeOptions?: ThemeOption[];
   selectedThemeIndex?: number;
   mediaType?: string;
   layoutStyle?: string;
-};
+}
 
-// Fix the type issue by making a simpler type for form values
+// Form values type
 type FormValues = z.infer<typeof formSchema>;
 
 const LandingPageCreator = () => {
   const [generatingPage, setGeneratingPage] = useState(false);
   const [previewHtml, setPreviewHtml] = useState("");
   const [activeTab, setActiveTab] = useState("form");
-  const [generatedContent, setGeneratedContent] = useState<any>(null);
+  const [generatedContent, setGeneratedContent] = useState<unknown>(null);
   const [selectedThemeIndex, setSelectedThemeIndex] = useState(0);
-  const [themeOptions, setThemeOptions] = useState<any[]>([]);
+  const [themeOptions, setThemeOptions] = useState<ThemeOption[]>([]);
   const { user } = useAuth();
   const navigate = useNavigate();
   const [showOptimizer, setShowOptimizer] = useState(false);
@@ -167,13 +169,16 @@ const LandingPageCreator = () => {
     },
   });
   
-  // Track form instance with a ref to avoid circular references
+  // Use a ref for form to prevent circular dependencies
   const formRef = useRef(form);
-  formRef.current = form;
-
-  // Auto-save draft periodically instead of watching form values
   useEffect(() => {
-    const autoSaveTimer = setInterval(() => {
+    formRef.current = form;
+  }, [form]);
+
+  // Auto-save draft periodically
+  useEffect(() => {
+    // Using a simple timer instead of watching form values
+    const autoSaveInterval = window.setInterval(() => {
       const currentForm = formRef.current;
       const currentValues = currentForm.getValues();
       
@@ -182,8 +187,8 @@ const LandingPageCreator = () => {
       }
     }, 5000);
     
-    return () => clearInterval(autoSaveTimer);
-  }, []); // No dependencies to avoid type issues
+    return () => window.clearInterval(autoSaveInterval);
+  }, []);
   
   // Check for existing drafts when component mounts
   useEffect(() => {
@@ -274,7 +279,7 @@ const LandingPageCreator = () => {
         .map(keyword => keyword.trim())
         .filter(keyword => keyword.length > 0);
       
-      // Prepare metadata to store - simplified to avoid deep nesting
+      // Prepare metadata to store
       const metadata: PageMetadata = {
         generatedContent,
         themeOptions,
@@ -402,8 +407,9 @@ const LandingPageCreator = () => {
 
       // Add suggested keywords
       const allKeywords = [...keywordsArray];
-      if (generatedContent.keywordSuggestions) {
-        allKeywords.push(...generatedContent.keywordSuggestions);
+      if (typeof generatedContent === 'object' && generatedContent !== null && 'keywordSuggestions' in generatedContent) {
+        const suggestions = generatedContent.keywordSuggestions as string[];
+        allKeywords.push(...suggestions);
       }
 
       // Check if we're updating a draft or creating a new page
@@ -506,7 +512,7 @@ const LandingPageCreator = () => {
       values.audience,
       keywordsArray,
       themeOptions[selectedThemeIndex],
-      generatedContent
+      content
     );
     
     // Show preview of the regenerated page
@@ -557,354 +563,399 @@ const LandingPageCreator = () => {
     autoSaveDraft(form.getValues());
   };
 
+  // Function to render form content
+  const renderFormContent = () => (
+    <Card className="shadow-lg border-primary/10 animate-fade-in">
+      <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/5">
+        <div className="flex justify-between items-center">
+          <div>
+            <CardTitle className="text-2xl font-bold text-primary">Create Your Landing Page</CardTitle>
+            <CardDescription className="text-muted-foreground mt-1">
+              Fill in the details below to generate a high-converting landing page
+            </CardDescription>
+          </div>
+          {lastSaved && (
+            <div className="text-xs text-muted-foreground flex items-center bg-background/80 px-2 py-1 rounded-full shadow-sm">
+              {autoSaving ? (
+                <>
+                  <Loader2 className="h-3 w-3 mr-1 animate-spin text-primary" />
+                  <span>Auto-saving...</span>
+                </>
+              ) : (
+                <>
+                  <Save className="h-3 w-3 mr-1 text-primary" />
+                  <span>Saved: {lastSaved.toLocaleTimeString()}</span>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      </CardHeader>
+
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(handleSubmit)}>
+          <CardContent className="space-y-6 pt-6">
+            <FormField
+              control={form.control}
+              name="title"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-base font-medium">Page Title</FormLabel>
+                  <FormControl>
+                    <Input 
+                      placeholder="e.g. Summer Sale Landing Page" 
+                      {...field}
+                      className="h-11 text-base"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormField
+                control={form.control}
+                name="campaign_type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-base font-medium">Campaign Type</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="h-11">
+                          <SelectValue placeholder="Select campaign type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectLabel>Campaign Types</SelectLabel>
+                          {CAMPAIGN_TYPES.map((type) => (
+                            <SelectItem key={type} value={type}>{type}</SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="industry"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-base font-medium">Industry</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="h-11">
+                          <SelectValue placeholder="Select industry" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectLabel>Industries</SelectLabel>
+                          {INDUSTRY_OPTIONS.map((industry) => (
+                            <SelectItem key={industry} value={industry}>{industry}</SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormItem>
+                <FormLabel className="text-base font-medium">Media Type</FormLabel>
+                <Select
+                  onValueChange={setMediaType}
+                  defaultValue={mediaType}
+                  value={mediaType}
+                >
+                  <FormControl>
+                    <SelectTrigger className="h-11">
+                      <SelectValue placeholder="Select media type" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectLabel>Media Types</SelectLabel>
+                      {MEDIA_TYPE_OPTIONS.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {type === "Image" && (
+                            <div className="flex items-center">
+                              <Image className="h-4 w-4 mr-2 text-primary" />
+                              Image
+                            </div>
+                          )}
+                          {type === "Video" && (
+                            <div className="flex items-center">
+                              <Video className="h-4 w-4 mr-2 text-primary" />
+                              Video
+                            </div>
+                          )}
+                          {type === "Image and Video" && (
+                            <div className="flex items-center">
+                              <Image className="h-4 w-4 mr-2 text-primary" />
+                              <Video className="h-4 w-4 mr-1 text-primary" />
+                              Both
+                            </div>
+                          )}
+                          {type === "None" && type}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </FormItem>
+              
+              <FormItem>
+                <FormLabel className="text-base font-medium">Layout Style</FormLabel>
+                <Select
+                  onValueChange={setLayoutStyle}
+                  defaultValue={layoutStyle}
+                  value={layoutStyle}
+                >
+                  <FormControl>
+                    <SelectTrigger className="h-11">
+                      <SelectValue placeholder="Select layout style" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectLabel>Layout Styles</SelectLabel>
+                      {LAYOUT_OPTIONS.map((style) => (
+                        <SelectItem key={style} value={style}>{style}</SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </FormItem>
+            </div>
+
+            <FormField
+              control={form.control}
+              name="audience"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-base font-medium">Target Audience</FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      placeholder="Describe your target audience (e.g. Small business owners aged 30-45 looking for accounting software)"
+                      className="min-h-[120px] text-base resize-none"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="keywords"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-base font-medium">Keywords</FormLabel>
+                  <FormControl>
+                    <Input 
+                      placeholder="Enter keywords separated by commas (e.g. digital marketing, SEO, content strategy)"
+                      className="h-11 text-base"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </CardContent>
+
+          <CardFooter className="border-t bg-gradient-to-r from-accent/5 to-primary/5 pt-4">
+            <Button 
+              type="submit" 
+              disabled={generatingPage} 
+              className="w-full h-12 text-base shadow-md hover:shadow-lg transition-all"
+              size="lg"
+            >
+              {generatingPage ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Generating Your Page...
+                </>
+              ) : (
+                <>
+                  Create Landing Page
+                  <ChevronRight className="ml-1 h-5 w-5" />
+                </>
+              )}
+            </Button>
+          </CardFooter>
+        </form>
+      </Form>
+    </Card>
+  );
+
+  // Function to render preview content
+  const renderPreviewContent = () => (
+    <ResizablePanelGroup
+      direction="horizontal"
+      className="min-h-[700px] rounded-lg border"
+    >
+      {/* Controls Panel - 40% width */}
+      <ResizablePanel defaultSize={40} minSize={30}>
+        <div className="h-full flex flex-col">
+          <div className="p-4 border-b bg-muted/20">
+            <h2 className="text-lg font-semibold text-primary">Edit & Optimize</h2>
+          </div>
+          <div className="flex-1 overflow-auto p-4 space-y-4">
+            <Card className="shadow-sm">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">Page Controls</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start hover:bg-primary/5 transition-all"
+                  onClick={regenerateContent}
+                  disabled={generatingPage}
+                >
+                  <FileText className="mr-2 h-4 w-4 text-primary" />
+                  Regenerate Content
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start hover:bg-primary/5 transition-all"
+                  onClick={regenerateTheme}
+                  disabled={generatingPage}
+                >
+                  <Palette className="mr-2 h-4 w-4 text-primary" />
+                  Try Different Design
+                </Button>
+                
+                <Button
+                  variant={showOptimizer ? "secondary" : "outline"}
+                  className="w-full justify-start"
+                  onClick={toggleOptimizer}
+                  disabled={generatingPage}
+                >
+                  <Sparkles className="mr-2 h-4 w-4 text-primary" />
+                  {showOptimizer ? "Hide AI Optimizer" : "AI Optimizer"}
+                </Button>
+                
+                <Button 
+                  className="w-full justify-start"
+                  onClick={handleSavePage}
+                  disabled={generatingPage}
+                >
+                  {generatingPage ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Save className="mr-2 h-4 w-4" />
+                  )}
+                  Save Landing Page
+                </Button>
+              </CardContent>
+            </Card>
+            
+            {showOptimizer && (
+              <DynamicLandingPageOptimizer 
+                htmlContent={previewHtml}
+                pageInfo={{
+                  title: form.getValues("title"),
+                  audience: form.getValues("audience"),
+                  industry: form.getValues("industry"),
+                  campaign_type: form.getValues("campaign_type"),
+                  keywords: form.getValues("keywords")
+                    .split(",")
+                    .map(keyword => keyword.trim())
+                    .filter(keyword => keyword.length > 0)
+                }}
+                onApplyChanges={handleApplyOptimizations}
+              />
+            )}
+            
+            {typeof generatedContent === 'object' && 
+             generatedContent !== null && 
+             'keywordSuggestions' in generatedContent && 
+             Array.isArray(generatedContent.keywordSuggestions) && 
+             generatedContent.keywordSuggestions.length > 0 && (
+              <Card className="shadow-sm">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg">AI-Suggested Keywords</CardTitle>
+                  <CardDescription>
+                    Additional keywords that could improve page performance
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-2">
+                    {(generatedContent.keywordSuggestions as string[]).map((keyword, index) => (
+                      <div key={index} className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
+                        {keyword}
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
+      </ResizablePanel>
+
+      <ResizableHandle withHandle />
+
+      {/* Preview Panel - 60% width */}
+      <ResizablePanel defaultSize={60} minSize={40}>
+        <div className="h-full flex flex-col">
+          <div className="p-4 border-b bg-muted/20 flex justify-between items-center">
+            <h2 className="text-lg font-semibold text-primary">Preview</h2>
+            <span className="text-xs text-muted-foreground px-2 py-1 bg-primary/5 rounded-full">Live Preview</span>
+          </div>
+          <div className="flex-1 overflow-auto bg-white">
+            <iframe
+              title="Landing Page Preview"
+              srcDoc={previewHtml}
+              className="w-full h-full border-0"
+              style={{minHeight: "600px"}}
+            />
+          </div>
+        </div>
+      </ResizablePanel>
+    </ResizablePanelGroup>
+  );
+
   return (
     <Layout title="Create Landing Page">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto px-4">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="form">Page Details</TabsTrigger>
-            <TabsTrigger value="preview" disabled={!previewHtml}>Preview & Edit</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 mb-6 shadow-md">
+            <TabsTrigger value="form" className="data-[state=active]:bg-primary data-[state=active]:text-white">
+              <FileText className="mr-2 h-4 w-4" />
+              Page Details
+            </TabsTrigger>
+            <TabsTrigger value="preview" disabled={!previewHtml} className="data-[state=active]:bg-primary data-[state=active]:text-white">
+              <Image className="mr-2 h-4 w-4" />
+              Preview & Edit
+            </TabsTrigger>
           </TabsList>
           
           <TabsContent value="form" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <div className="flex justify-between items-center">
-                  <div>
-                    <CardTitle>Create a New Landing Page</CardTitle>
-                    <CardDescription>
-                      Fill in the details below to generate your AI-optimized landing page
-                    </CardDescription>
-                  </div>
-                  {lastSaved && (
-                    <div className="text-xs text-muted-foreground flex items-center">
-                      {autoSaving ? (
-                        <>
-                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                          Auto-saving...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="h-3 w-3 mr-1" />
-                          Last saved: {lastSaved.toLocaleTimeString()}
-                        </>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </CardHeader>
-
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(handleSubmit)}>
-                  <CardContent className="space-y-4">
-                    <FormField
-                      control={form.control}
-                      name="title"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Page Title</FormLabel>
-                          <FormControl>
-                            <Input placeholder="e.g. Summer Sale Landing Page" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="campaign_type"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Campaign Type</FormLabel>
-                            <Select
-                              onValueChange={field.onChange}
-                              defaultValue={field.value}
-                              value={field.value}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select campaign type" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectGroup>
-                                  <SelectLabel>Campaign Types</SelectLabel>
-                                  {CAMPAIGN_TYPES.map((type) => (
-                                    <SelectItem key={type} value={type}>{type}</SelectItem>
-                                  ))}
-                                </SelectGroup>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="industry"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Industry</FormLabel>
-                            <Select
-                              onValueChange={field.onChange}
-                              defaultValue={field.value}
-                              value={field.value}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select industry" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectGroup>
-                                  <SelectLabel>Industries</SelectLabel>
-                                  {INDUSTRY_OPTIONS.map((industry) => (
-                                    <SelectItem key={industry} value={industry}>{industry}</SelectItem>
-                                  ))}
-                                </SelectGroup>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormItem>
-                        <FormLabel>Media Type</FormLabel>
-                        <Select
-                          onValueChange={setMediaType}
-                          defaultValue={mediaType}
-                          value={mediaType}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select media type" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectGroup>
-                              <SelectLabel>Media Types</SelectLabel>
-                              {MEDIA_TYPE_OPTIONS.map((type) => (
-                                <SelectItem key={type} value={type}>
-                                  {type === "Image" && (
-                                    <div className="flex items-center">
-                                      <Image className="h-4 w-4 mr-2" />
-                                      Image
-                                    </div>
-                                  )}
-                                  {type === "Video" && (
-                                    <div className="flex items-center">
-                                      <Video className="h-4 w-4 mr-2" />
-                                      Video
-                                    </div>
-                                  )}
-                                  {type === "Image and Video" && (
-                                    <div className="flex items-center">
-                                      <Image className="h-4 w-4 mr-2" />
-                                      <Video className="h-4 w-4 mr-1" />
-                                      Both
-                                    </div>
-                                  )}
-                                  {type === "None" && type}
-                                </SelectItem>
-                              ))}
-                            </SelectGroup>
-                          </SelectContent>
-                        </Select>
-                      </FormItem>
-                      
-                      <FormItem>
-                        <FormLabel>Layout Style</FormLabel>
-                        <Select
-                          onValueChange={setLayoutStyle}
-                          defaultValue={layoutStyle}
-                          value={layoutStyle}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select layout style" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectGroup>
-                              <SelectLabel>Layout Styles</SelectLabel>
-                              {LAYOUT_OPTIONS.map((style) => (
-                                <SelectItem key={style} value={style}>{style}</SelectItem>
-                              ))}
-                            </SelectGroup>
-                          </SelectContent>
-                        </Select>
-                      </FormItem>
-                    </div>
-
-                    <FormField
-                      control={form.control}
-                      name="audience"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Target Audience</FormLabel>
-                          <FormControl>
-                            <Textarea 
-                              placeholder="Describe your target audience (e.g. Small business owners aged 30-45 looking for accounting software)"
-                              className="min-h-[100px]"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="keywords"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Keywords</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="Enter keywords separated by commas (e.g. digital marketing, SEO, content strategy)"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </CardContent>
-
-                  <CardFooter>
-                    <Button type="submit" disabled={generatingPage} className="w-full">
-                      {generatingPage ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Generating...
-                        </>
-                      ) : (
-                        "Generate Landing Page"
-                      )}
-                    </Button>
-                  </CardFooter>
-                </form>
-              </Form>
-            </Card>
+            {renderFormContent()}
           </TabsContent>
           
           <TabsContent value="preview" className="space-y-4">
-            {previewHtml && (
-              <div className="grid grid-cols-12 gap-4">
-                {/* Controls Section - Now takes 5 columns */}
-                <div className="col-span-12 md:col-span-5 space-y-4">
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-lg">Page Controls</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <Button 
-                        variant="outline" 
-                        className="w-full justify-start"
-                        onClick={regenerateContent}
-                        disabled={generatingPage}
-                      >
-                        <FileText className="mr-2 h-4 w-4" />
-                        Regenerate Content
-                      </Button>
-                      
-                      <Button 
-                        variant="outline" 
-                        className="w-full justify-start"
-                        onClick={regenerateTheme}
-                        disabled={generatingPage}
-                      >
-                        <Palette className="mr-2 h-4 w-4" />
-                        Try Different Design
-                      </Button>
-                      
-                      <Button
-                        variant={showOptimizer ? "secondary" : "outline"}
-                        className="w-full justify-start"
-                        onClick={toggleOptimizer}
-                        disabled={generatingPage}
-                      >
-                        <Sparkles className="mr-2 h-4 w-4" />
-                        {showOptimizer ? "Hide AI Optimizer" : "AI Optimizer"}
-                      </Button>
-                      
-                      <Button 
-                        className="w-full justify-start"
-                        onClick={handleSavePage}
-                        disabled={generatingPage}
-                      >
-                        {generatingPage ? (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : (
-                          <Save className="mr-2 h-4 w-4" />
-                        )}
-                        Save Landing Page
-                      </Button>
-                    </CardContent>
-                  </Card>
-                  
-                  {showOptimizer && (
-                    <DynamicLandingPageOptimizer 
-                      htmlContent={previewHtml}
-                      pageInfo={{
-                        title: form.getValues("title"),
-                        audience: form.getValues("audience"),
-                        industry: form.getValues("industry"),
-                        campaign_type: form.getValues("campaign_type"),
-                        keywords: form.getValues("keywords")
-                          .split(",")
-                          .map(keyword => keyword.trim())
-                          .filter(keyword => keyword.length > 0)
-                      }}
-                      onApplyChanges={handleApplyOptimizations}
-                    />
-                  )}
-                  
-                  {generatedContent?.keywordSuggestions && generatedContent.keywordSuggestions.length > 0 && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-lg">AI-Suggested Keywords</CardTitle>
-                        <CardDescription>
-                          Our AI has suggested these additional keywords that might improve your page performance
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex flex-wrap gap-2">
-                          {generatedContent.keywordSuggestions.map((keyword: string, index: number) => (
-                            <div key={index} className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
-                              {keyword}
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-                </div>
-                
-                {/* Preview Section - Now takes 7 columns for a narrower preview like in the image */}
-                <div className="col-span-12 md:col-span-7">
-                  <Card className="overflow-hidden h-full">
-                    <CardHeader className="pb-2 border-b">
-                      <CardTitle className="text-lg">Landing Page Preview</CardTitle>
-                    </CardHeader>
-                    <div className="h-[700px] overflow-auto">
-                      <iframe
-                        title="Landing Page Preview"
-                        srcDoc={previewHtml}
-                        className="w-full h-full border-0"
-                      />
-                    </div>
-                  </Card>
-                </div>
-              </div>
-            )}
+            {previewHtml && renderPreviewContent()}
           </TabsContent>
         </Tabs>
       </div>
