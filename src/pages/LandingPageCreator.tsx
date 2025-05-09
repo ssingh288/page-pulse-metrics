@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
@@ -164,9 +163,8 @@ const LandingPageCreator = () => {
     },
   });
   
-  // Using ref to avoid TypeScript deep instantiation error
-  type SimpleFormType = UseFormReturn<FormValues>;
-  const formRef = useRef<SimpleFormType>(form);
+  // Using ref to store form without causing TypeScript deep instantiation error
+  const formRef = useRef<typeof form>(form);
   useEffect(() => {
     formRef.current = form;
   }, [form]);

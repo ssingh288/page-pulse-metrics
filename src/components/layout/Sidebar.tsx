@@ -13,7 +13,6 @@ import {
   PlusCircle,
   User,
   LogOut,
-  Sparkles,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
@@ -82,12 +81,7 @@ export function AppSidebar() {
           href="/media"
           active={isActive("/media")}
         />
-        <NavItem
-          icon={Sparkles}
-          label="AI Content Generator"
-          href="/ai-content"
-          active={isActive("/ai-content")}
-        />
+        {/* Removed AI Content Generator nav item */}
       </div>
       
       <Separator className="my-4" />
