@@ -165,7 +165,8 @@ const LandingPageCreator = () => {
   });
   
   // Using ref to avoid TypeScript deep instantiation error
-  const formRef = useRef<UseFormReturn<FormValues>>(form);
+  type SimpleFormType = UseFormReturn<FormValues>;
+  const formRef = useRef<SimpleFormType>(form);
   useEffect(() => {
     formRef.current = form;
   }, [form]);
