@@ -1,6 +1,16 @@
 
 project_id = "emffdnkdbtpyiiaddyqw"
 
+[api]
+# Enable leaked password protection to prevent common passwords
+enabled_leaked_password_protection = true
+
+[auth]
+# Enable Multi-Factor Authentication (MFA)
+enable_mfa = true
+# Require MFA for all users
+require_mfa = false
+
 [functions.generate-ai-content]
 verify_jwt = true
 
