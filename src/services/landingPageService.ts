@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ThemeOption } from "@/utils/landingPageGenerator";
@@ -134,7 +135,7 @@ export async function publishLandingPage(
   formValues: LandingPageFormData,
   draftId: string | null,
   previewHtml: string,
-  generatedContent: Record<string, unknown> // Changed from any/unknown to Record<string, unknown>
+  generatedContent: Record<string, unknown> // Properly typed as Record<string, unknown>
 ) {
   try {
     // Process keywords into an array
