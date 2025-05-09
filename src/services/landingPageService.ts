@@ -3,9 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ThemeOption } from "@/utils/landingPageGenerator";
 
-// Define metadata type for landing page
+// Define metadata type for landing page without circular references
 export interface PageMetadata {
-  generatedContent?: unknown;
+  generatedContent?: any; // Using any instead of unknown to avoid deep instantiation
   themeOptions?: ThemeOption[];
   selectedThemeIndex?: number;
   mediaType?: string;
@@ -135,7 +135,7 @@ export async function publishLandingPage(
   formValues: LandingPageFormData,
   draftId: string | null,
   previewHtml: string,
-  generatedContent: unknown
+  generatedContent: any // Changed from unknown to any
 ) {
   try {
     // Process keywords into an array
