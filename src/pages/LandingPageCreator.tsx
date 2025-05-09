@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,8 +40,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 
-// This was causing the deep type instantiation error
-// Using a type alias instead of a direct reference to the form object
+// Simplified import approach to avoid deep instantiation
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -57,6 +56,7 @@ const formSchema = z.object({
   keywords: z.string().min(3, "Please enter at least one keyword")
 });
 
+// Constants for select options
 const INDUSTRY_OPTIONS = [
   "E-commerce",
   "Software/SaaS",
@@ -131,8 +131,14 @@ interface LandingPageData {
   metadata?: PageMetadata | null;
 }
 
-// Form values type
-type FormValues = z.infer<typeof formSchema>;
+// Explicitly define form values type without complex nesting
+type FormValues = {
+  title: string;
+  campaign_type: string;
+  industry: string;
+  audience: string;
+  keywords: string;
+};
 
 const LandingPageCreator = () => {
   const [generatingPage, setGeneratingPage] = useState(false);
@@ -150,7 +156,7 @@ const LandingPageCreator = () => {
   const [layoutStyle, setLayoutStyle] = useState("Image Top, Content Below");
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   
-  // Form setup - using useRef to avoid deep type instantiation error
+  // Simplified form setup to avoid deep type instantiation
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -162,17 +168,10 @@ const LandingPageCreator = () => {
     },
   });
   
-  // Using ref to store form without causing TypeScript deep instantiation error
-  const formRef = useRef<any>(form);
-  useEffect(() => {
-    formRef.current = form;
-  }, [form]);
-
-  // Auto-save draft periodically with interval to avoid dependency cycle
+  // Auto-save draft periodically
   useEffect(() => {
     const autoSaveInterval = window.setInterval(() => {
-      const currentForm = formRef.current;
-      const currentValues = currentForm.getValues();
+      const currentValues = form.getValues();
       
       if (currentValues.title && currentValues.title.length >= 3) {
         autoSaveDraft(currentValues);
@@ -180,7 +179,7 @@ const LandingPageCreator = () => {
     }, 5000);
     
     return () => window.clearInterval(autoSaveInterval);
-  }, []);
+  }, [form]);
   
   // Check for existing drafts when component mounts
   useEffect(() => {
@@ -555,7 +554,7 @@ const LandingPageCreator = () => {
     autoSaveDraft(form.getValues());
   };
 
-  // Function to render form content - Updated to match the design in the image
+  // Function to render form content
   const renderFormContent = () => (
     <Card className="shadow-lg border-primary/10 animate-fade-in">
       <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/5">
@@ -798,7 +797,7 @@ const LandingPageCreator = () => {
     </Card>
   );
 
-  // Function to render preview content - Updated to match the design in the image
+  // Function to render preview content
   const renderPreviewContent = () => (
     <div className="grid grid-cols-12 gap-6">
       {/* Controls Panel - 7 columns (left side) */}
