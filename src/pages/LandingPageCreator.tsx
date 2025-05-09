@@ -42,7 +42,6 @@ import {
 
 // This was causing the deep type instantiation error
 // Using a type alias instead of a direct reference to the form object
-import type { UseFormReturn } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -151,7 +150,7 @@ const LandingPageCreator = () => {
   const [layoutStyle, setLayoutStyle] = useState("Image Top, Content Below");
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   
-  // Form setup
+  // Form setup - using useRef to avoid deep type instantiation error
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
