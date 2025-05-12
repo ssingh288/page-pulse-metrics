@@ -32,7 +32,7 @@ const LandingPageCreator = () => {
   const [generatingPage, setGeneratingPage] = useState(false);
   const [previewHtml, setPreviewHtml] = useState("");
   const [activeTab, setActiveTab] = useState("form");
-  const [generatedContent, setGeneratedContent] = useState<Record<string, unknown>>({});
+  const [generatedContent, setGeneratedContent] = useState<Record<string, any>>({});
   const [selectedThemeIndex, setSelectedThemeIndex] = useState(0);
   const [themeOptions, setThemeOptions] = useState<ThemeOption[]>([]);
   const { user } = useAuth();
@@ -101,7 +101,7 @@ const LandingPageCreator = () => {
               : draft.metadata;
               
             if (metadata.generatedContent) {
-              setGeneratedContent(metadata.generatedContent as Record<string, unknown>);
+              setGeneratedContent(metadata.generatedContent as Record<string, any>);
             }
             
             if (metadata.themeOptions) {
@@ -177,7 +177,7 @@ const LandingPageCreator = () => {
         formValues: values,
         onSuccess: (html, content, themes) => {
           setPreviewHtml(html);
-          setGeneratedContent(content as Record<string, unknown>);
+          setGeneratedContent(content as Record<string, any>);
           setThemeOptions(themes);
           setActiveTab("preview");
           
