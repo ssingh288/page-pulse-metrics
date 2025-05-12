@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { toast } from "sonner";
@@ -32,7 +31,7 @@ const LandingPageCreator = () => {
   const [generatingPage, setGeneratingPage] = useState(false);
   const [previewHtml, setPreviewHtml] = useState("");
   const [activeTab, setActiveTab] = useState("form");
-  const [generatedContent, setGeneratedContent] = useState<Record<string, unknown>>({});
+  const [generatedContent, setGeneratedContent] = useState<any>({});
   const [selectedThemeIndex, setSelectedThemeIndex] = useState(0);
   const [themeOptions, setThemeOptions] = useState<ThemeOption[]>([]);
   const { user } = useAuth();
@@ -101,7 +100,7 @@ const LandingPageCreator = () => {
               : draft.metadata;
               
             if (metadata.generatedContent) {
-              setGeneratedContent(metadata.generatedContent as Record<string, unknown>);
+              setGeneratedContent(metadata.generatedContent);
             }
             
             if (metadata.themeOptions) {
@@ -177,7 +176,7 @@ const LandingPageCreator = () => {
         formValues: values,
         onSuccess: (html, content, themes) => {
           setPreviewHtml(html);
-          setGeneratedContent(content as Record<string, unknown>);
+          setGeneratedContent(content);
           setThemeOptions(themes);
           setActiveTab("preview");
           

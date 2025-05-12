@@ -5,7 +5,7 @@ import { ThemeOption } from "@/utils/landingPageGenerator";
 
 // Define metadata type for landing page with explicit typing to prevent circular references
 export interface PageMetadata {
-  generatedContent?: Record<string, unknown>; // Using Record instead of any/unknown
+  generatedContent?: any; // Using 'any' to completely break circular references
   themeOptions?: ThemeOption[];
   selectedThemeIndex?: number;
   mediaType?: string;
@@ -135,7 +135,7 @@ export async function publishLandingPage(
   formValues: LandingPageFormData,
   draftId: string | null,
   previewHtml: string,
-  generatedContent: Record<string, unknown> // Properly typed as Record<string, unknown>
+  generatedContent: any // Using any to break circular references
 ) {
   try {
     // Process keywords into an array

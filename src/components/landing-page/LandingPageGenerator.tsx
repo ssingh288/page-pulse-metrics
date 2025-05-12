@@ -1,11 +1,10 @@
 
 import { generateLandingPageContent, generateEnhancedHtml, ThemeOption } from "@/utils/landingPageGenerator";
 import { LandingPageFormData } from "@/services/landingPageService";
-import { toast } from "sonner";
 
 interface GenerateLandingPageProps {
   formValues: LandingPageFormData;
-  onSuccess: (html: string, content: unknown, themes: ThemeOption[]) => void;
+  onSuccess: (html: string, content: any, themes: ThemeOption[]) => void;
   onError: (error: Error) => void;
 }
 
@@ -55,7 +54,7 @@ export function regenerateContent(
   formValues: LandingPageFormData,
   currentThemeIndex: number,
   themeOptions: ThemeOption[],
-  onSuccess: (html: string, content: unknown) => void,
+  onSuccess: (html: string, content: any) => void,
   onError: (error: Error) => void
 ) {
   try {
@@ -101,7 +100,7 @@ export function generateWithNextTheme(
   formValues: LandingPageFormData,
   currentThemeIndex: number,
   themeOptions: ThemeOption[],
-  generatedContent: unknown,
+  generatedContent: any,
   onSuccess: (html: string, newThemeIndex: number) => void,
   onError: (error: Error) => void
 ) {
