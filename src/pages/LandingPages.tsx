@@ -1,9 +1,8 @@
-
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
-import { Plus, Search, Edit, BarChart2, ExternalLink, Sparkles, Trash2 } from "lucide-react";
+import { Plus, Search, Edit, BarChart2, ExternalLink, Sparkles, Trash2, FileText } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Card,
@@ -27,6 +26,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -100,130 +100,130 @@ const LandingPages = () => {
   };
 
   return (
-    <Layout title="Landing Pages">
-      <div className="space-y-8">
+    <Layout>
+      <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight">Landing Pages</h2>
-            <p className="text-muted-foreground mt-2">
-              Create, manage and optimize your marketing pages
+          <div className="space-y-1">
+            <h1 className="text-2xl font-bold tracking-tight">Landing Pages</h1>
+            <p className="text-muted-foreground">
+              Create and manage your landing pages
             </p>
           </div>
-          <Button asChild>
-            <Link to="/create-page">
-              <Plus className="mr-2 h-4 w-4" /> Create Page
-            </Link>
-          </Button>
+          
+          <div className="flex gap-2">
+            <Button asChild>
+              <Link to="/create-page">
+                <Plus className="mr-2 h-4 w-4" /> Create New Page
+              </Link>
+            </Button>
+          </div>
         </div>
 
-        <div className="flex items-center border rounded-md px-3 max-w-md">
-          <Search className="h-4 w-4 text-muted-foreground mr-2" />
-          <Input
-            placeholder="Search pages..."
-            className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
+        <Card>
+          <CardHeader>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="space-y-1">
+                <CardTitle>Your Pages</CardTitle>
+                <CardDescription>
+                  {pages.length} {pages.length === 1 ? 'page' : 'pages'} created
+                </CardDescription>
+              </div>
+              
+              <div className="flex gap-2">
+                <div className="relative">
+                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search pages..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-8 w-[200px]"
+                  />
+                </div>
+              </div>
+            </div>
+          </CardHeader>
 
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3].map((i) => (
-              <Card key={i} className="animate-pulse">
-                <CardHeader>
-                  <div className="h-6 bg-muted rounded w-3/4 mb-2"></div>
-                  <div className="h-4 bg-muted rounded w-1/2"></div>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-4 bg-muted rounded w-full mb-2"></div>
-                  <div className="h-4 bg-muted rounded w-4/5"></div>
-                </CardContent>
-                <CardFooter>
-                  <div className="h-9 bg-muted rounded w-full"></div>
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
-        ) : filteredPages.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredPages.map((page) => (
-              <Card key={page.id}>
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <CardTitle>{page.title}</CardTitle>
-                    <Badge variant={page.published_at ? "default" : "outline"}>
-                      {page.published_at ? "Published" : "Draft"}
-                    </Badge>
-                  </div>
-                  <CardDescription>{page.campaign_type}</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <p className="text-sm text-muted-foreground">
-                    Created: {format(new Date(page.created_at), 'PPP')}
-                  </p>
-                  {page.published_at && (
-                    <p className="text-sm text-muted-foreground">
-                      Published: {format(new Date(page.published_at), 'PPP')}
-                    </p>
-                  )}
-                </CardContent>
-                <CardFooter className="flex justify-between">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline">Actions</Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem asChild>
-                        <Link to={`/pages/${page.id}/edit`} className="flex items-center cursor-pointer">
-                          <Edit className="mr-2 h-4 w-4" /> Edit
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link to={`/pages/${page.id}/metrics`} className="flex items-center cursor-pointer">
-                          <BarChart2 className="mr-2 h-4 w-4" /> Metrics
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link to={`/pages/${page.id}/optimize`} className="flex items-center cursor-pointer">
-                          <Sparkles className="mr-2 h-4 w-4" /> AI Optimize
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleDeletePage(page.id)} className="flex items-center cursor-pointer text-destructive">
-                        <Trash2 className="mr-2 h-4 w-4" /> Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                  
-                  {page.published_url && (
-                    <Button variant="ghost" size="icon" asChild>
-                      <a href={page.published_url} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="h-4 w-4" />
-                      </a>
-                    </Button>
-                  )}
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-12">
-            <h3 className="text-lg font-medium text-muted-foreground mb-4">
-              No landing pages found
-            </h3>
-            <p className="text-sm text-muted-foreground mb-6">
-              {searchTerm
-                ? "No pages match your search. Try a different keyword."
-                : "You haven't created any landing pages yet."}
-            </p>
-            {!searchTerm && (
-              <Button asChild>
-                <Link to="/create-page">
-                  <Plus className="mr-2 h-4 w-4" /> Create Your First Page
-                </Link>
-              </Button>
+          <CardContent>
+            {pages.length === 0 ? (
+              <div className="text-center py-8">
+                <FileText className="mx-auto h-12 w-12 text-primary/30 mb-4" />
+                <h3 className="text-lg font-medium mb-2">No landing pages yet</h3>
+                <p className="text-muted-foreground mb-6">
+                  Create your first landing page to get started
+                </p>
+                <Button asChild>
+                  <Link to="/create-page">
+                    <Plus className="mr-2 h-4 w-4" /> Create Landing Page
+                  </Link>
+                </Button>
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {filteredPages.map((page) => (
+                  <Card key={page.id} className="overflow-hidden">
+                    <CardHeader className="p-4 pb-2">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <CardTitle className="text-base">{page.title}</CardTitle>
+                          <CardDescription>
+                            {page.campaign_type} • Created {format(new Date(page.created_at), "MMM d, yyyy")}
+                          </CardDescription>
+                        </div>
+                        <Badge variant={page.published_url ? "default" : "secondary"}>
+                          {page.published_url ? "Published" : "Draft"}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    
+                    <CardContent className="p-4 pt-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          {page.published_url && (
+                            <Button variant="ghost" size="icon" asChild>
+                              <a href={page.published_url} target="_blank" rel="noopener noreferrer">
+                                <ExternalLink className="h-4 w-4" />
+                              </a>
+                            </Button>
+                          )}
+                        </div>
+                        
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm">Actions</Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem asChild>
+                              <Link to={`/pages/${page.id}/edit`} className="flex items-center cursor-pointer">
+                                <Edit className="mr-2 h-4 w-4" /> Edit
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                              <Link to={`/pages/${page.id}/metrics`} className="flex items-center cursor-pointer">
+                                <BarChart2 className="mr-2 h-4 w-4" /> Metrics
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                              <Link to={`/pages/${page.id}/optimize`} className="flex items-center cursor-pointer">
+                                <Sparkles className="mr-2 h-4 w-4" /> AI Optimize
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                              onClick={() => handleDeletePage(page.id)} 
+                              className="flex items-center cursor-pointer text-destructive"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" /> Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             )}
-          </div>
-        )}
+          </CardContent>
+        </Card>
       </div>
     </Layout>
   );

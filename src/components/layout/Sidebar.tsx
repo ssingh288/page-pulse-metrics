@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -81,12 +80,6 @@ export function AppSidebar() {
           label="Media Library"
           href="/media"
           active={isActive("/media")}
-        />
-        <NavItem
-          icon={Sparkles}
-          label="AI Content Generator"
-          href="/ai-generator"
-          active={isActive("/ai-generator")}
         />
       </div>
       
