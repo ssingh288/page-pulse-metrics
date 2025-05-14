@@ -12,6 +12,7 @@ export interface LandingPageData {
   initial_keywords: string[];
   html_content: string;
   metadata?: string; // To store JSON stringified metadata
+  is_draft?: boolean;
 }
 
 export interface LandingPageFormData {
@@ -22,8 +23,9 @@ export interface LandingPageFormData {
   keywords: string;
 }
 
+// Fix for circular reference by using Record instead of "any"
 export interface PageMetadata {
-  generatedContent: any; // Using any to avoid circular reference issues
+  generatedContent: Record<string, unknown>; // Using Record to avoid circular reference
   themeOptions: ThemeOption[];
   selectedThemeIndex: number;
   mediaType?: string;

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { toast } from "sonner";
@@ -104,6 +105,7 @@ const LandingPageCreator = () => {
         setActiveTab("preview");
         
         // Attempt to reconstruct the generated content and theme options
+        // Fix: Check if metadata exists before trying to parse it
         if (draft.metadata) {
           try {
             const metadata = typeof draft.metadata === 'string' 
