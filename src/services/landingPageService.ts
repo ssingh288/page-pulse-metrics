@@ -11,6 +11,7 @@ export interface LandingPageData {
   campaign_type: string;
   initial_keywords: string[];
   html_content: string;
+  metadata?: string; // To store JSON stringified metadata
 }
 
 export interface LandingPageFormData {
