@@ -1,77 +1,63 @@
 
+import { LandingPageFormValues } from "@/components/landing-page/LandingPageForm";
+import { ThemeOption } from "@/utils/landingPageGenerator";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ThemeOption } from "@/utils/landingPageGenerator";
 
-// Define metadata type for landing page with explicit typing to prevent circular references
+export interface LandingPageData {
+  title: string;
+  audience: string;
+  industry: string;
+  campaign_type: string;
+  initial_keywords: string[];
+  html_content: string;
+}
+
+export interface LandingPageFormData {
+  title: string;
+  audience: string;
+  industry: string;
+  campaign_type: string;
+  keywords: string;
+}
+
 export interface PageMetadata {
-  generatedContent?: any; // Using 'any' to completely break circular references
-  themeOptions?: ThemeOption[];
-  selectedThemeIndex?: number;
+  generatedContent: any; // Using any to avoid circular reference issues
+  themeOptions: ThemeOption[];
+  selectedThemeIndex: number;
   mediaType?: string;
   layoutStyle?: string;
 }
 
-// Define data schema for landing pages
-export interface LandingPageData {
-  audience: string;
-  campaign_type: string;
-  created_at: string;
-  html_content: string | null;
-  id: string;
-  industry: string;
-  initial_keywords: string[];
-  published_at: string | null;
-  published_url: string | null;
-  title: string;
-  updated_at: string;
-  user_id: string;
-  status?: string;
-  metadata?: PageMetadata | null;
-}
-
-// Type for simple form values
-export interface LandingPageFormData {
-  title: string;
-  campaign_type: string;
-  industry: string;
-  audience: string;
-  keywords: string;
-}
-
-/**
- * Check for existing drafts for a user
- */
 export async function checkForExistingDraft(userId: string) {
   try {
     const { data, error } = await supabase
       .from('landing_pages')
       .select('*')
       .eq('user_id', userId)
-      .eq('status', 'draft')
+      .eq('is_draft', true)
       .order('updated_at', { ascending: false })
-      .limit(1);
-      
-    if (error) {
-      throw error;
+      .limit(1)
+      .single();
+    
+    if (error && error.code !== 'PGRST116') {
+      console.error("Error checking for existing draft:", error);
+      return null;
     }
     
-    return data && data.length > 0 ? data[0] as LandingPageData : null;
-  } catch (error: any) {
-    console.error("Error checking for drafts:", error);
+    return data || null;
+  } catch (error) {
+    console.error("Error checking for existing draft:", error);
     return null;
   }
 }
 
-/**
- * Save or update a draft landing page
- */
 export async function saveLandingPageDraft(
   userId: string,
-  formValues: LandingPageFormData,
-  draftId: string | null,
-  previewHtml: string | null,
-  metadata: PageMetadata
+  formValues: LandingPageFormValues,
+  existingDraftId: string | null,
+  htmlContent: string = "",
+  metadata: PageMetadata | null = null
 ) {
   try {
     // Process keywords into an array
@@ -79,63 +65,64 @@ export async function saveLandingPageDraft(
       .split(",")
       .map(keyword => keyword.trim())
       .filter(keyword => keyword.length > 0);
+      
+    const landingPageData = {
+      title: formValues.title,
+      audience: formValues.audience,
+      industry: formValues.industry,
+      campaign_type: formValues.campaign_type,
+      initial_keywords: keywordsArray,
+      html_content: htmlContent,
+      is_draft: true,
+      user_id: userId,
+      updated_at: new Date().toISOString(),
+      metadata: metadata ? JSON.stringify(metadata) : null
+    };
     
-    if (draftId) {
+    let result;
+    
+    if (existingDraftId) {
       // Update existing draft
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('landing_pages')
-        .update({
-          title: formValues.title,
-          campaign_type: formValues.campaign_type,
-          industry: formValues.industry,
-          audience: formValues.audience,
-          initial_keywords: keywordsArray,
-          html_content: previewHtml || null,
-          status: 'draft',
-          metadata,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', draftId);
+        .update(landingPageData)
+        .eq('id', existingDraftId)
+        .eq('user_id', userId)
+        .select('id')
+        .single();
         
       if (error) throw error;
       
-      return { success: true, id: draftId };
+      result = { success: true, id: data.id };
     } else {
       // Create new draft
       const { data, error } = await supabase
         .from('landing_pages')
-        .insert([{
-          user_id: userId,
-          title: formValues.title,
-          campaign_type: formValues.campaign_type,
-          industry: formValues.industry,
-          audience: formValues.audience,
-          initial_keywords: keywordsArray,
-          html_content: previewHtml || null,
-          status: 'draft',
-          metadata
-        }])
-        .select();
+        .insert({
+          ...landingPageData,
+          created_at: new Date().toISOString()
+        })
+        .select('id')
+        .single();
         
       if (error) throw error;
       
-      return { success: true, id: data?.[0]?.id || null };
+      result = { success: true, id: data.id };
     }
-  } catch (error: any) {
-    console.error("Error saving draft:", error);
-    return { success: false, id: draftId, error };
+    
+    return result;
+  } catch (error) {
+    console.error("Error saving landing page draft:", error);
+    return { success: false, error: error.message };
   }
 }
 
-/**
- * Save a landing page as published
- */
 export async function publishLandingPage(
   userId: string,
-  formValues: LandingPageFormData,
-  draftId: string | null,
-  previewHtml: string,
-  generatedContent: any // Using any to break circular references
+  formValues: LandingPageFormValues,
+  existingPageId: string | null,
+  htmlContent: string,
+  generatedContent: any
 ) {
   try {
     // Process keywords into an array
@@ -143,74 +130,56 @@ export async function publishLandingPage(
       .split(",")
       .map(keyword => keyword.trim())
       .filter(keyword => keyword.length > 0);
-
-    // Add suggested keywords
-    const allKeywords = [...keywordsArray];
-    if (generatedContent && 'keywordSuggestions' in generatedContent) {
-      const suggestions = generatedContent.keywordSuggestions as string[];
-      allKeywords.push(...suggestions);
-    }
-
-    let pageId;
-
-    // Check if we're updating a draft or creating a new page
-    if (draftId) {
-      // Update existing draft to published
-      const { error } = await supabase
-        .from('landing_pages')
-        .update({
-          title: formValues.title,
-          campaign_type: formValues.campaign_type,
-          industry: formValues.industry,
-          audience: formValues.audience,
-          initial_keywords: allKeywords,
-          html_content: previewHtml,
-          status: 'published',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', draftId);
-        
-      if (error) throw error;
       
-      pageId = draftId;
-    } else {
-      // Create new published page
+    const landingPageData = {
+      title: formValues.title,
+      audience: formValues.audience,
+      industry: formValues.industry,
+      campaign_type: formValues.campaign_type,
+      initial_keywords: keywordsArray,
+      html_content: htmlContent,
+      is_draft: false,
+      user_id: userId,
+      updated_at: new Date().toISOString(),
+      generated_content: typeof generatedContent === 'string' 
+        ? generatedContent 
+        : JSON.stringify(generatedContent)
+    };
+    
+    let result;
+    
+    if (existingPageId) {
+      // Update existing page
       const { data, error } = await supabase
         .from('landing_pages')
-        .insert([{
-          user_id: userId,
-          title: formValues.title,
-          campaign_type: formValues.campaign_type,
-          industry: formValues.industry,
-          audience: formValues.audience,
-          initial_keywords: allKeywords,
-          html_content: previewHtml,
-          status: 'published'
-        }])
-        .select();
+        .update(landingPageData)
+        .eq('id', existingPageId)
+        .eq('user_id', userId)
+        .select('id')
+        .single();
         
       if (error) throw error;
       
-      pageId = data?.[0]?.id;
-    }
-    
-    if (pageId) {
-      // Process keywords for the page
-      for (const keyword of allKeywords) {
-        await supabase.from('keywords').insert({
-          page_id: pageId,
-          keyword: keyword,
-          volume: Math.floor(Math.random() * 5000),
-          cpc: parseFloat((Math.random() * 5).toFixed(2))
-        });
-      }
+      result = { success: true, id: data.id };
+    } else {
+      // Create new page
+      const { data, error } = await supabase
+        .from('landing_pages')
+        .insert({
+          ...landingPageData,
+          created_at: new Date().toISOString()
+        })
+        .select('id')
+        .single();
+        
+      if (error) throw error;
       
-      return { success: true, id: pageId };
+      result = { success: true, id: data.id };
     }
     
-    return { success: false, error: "Failed to create or update page" };
-  } catch (error: any) {
-    console.error("Error publishing page:", error);
-    return { success: false, error };
+    return result;
+  } catch (error) {
+    console.error("Error publishing landing page:", error);
+    return { success: false, error: error.message };
   }
 }
