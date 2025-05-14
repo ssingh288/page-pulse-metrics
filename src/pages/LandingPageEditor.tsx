@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -13,7 +12,8 @@ import {
   ArrowLeft,
   Upload,
   Code,
-  PanelLeft
+  PanelLeft,
+  Sparkles
 } from "lucide-react";
 import {
   Card,
@@ -33,6 +33,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { EditorContent, useEditor } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import DynamicLandingPageOptimizer from '@/components/DynamicLandingPageOptimizer';
 
 interface LandingPage {
   id: string;
@@ -51,6 +54,7 @@ const LandingPageEditor = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [showOptimizer, setShowOptimizer] = useState(false);
 
   useEffect(() => {
     const fetchPage = async () => {
@@ -150,11 +154,31 @@ const LandingPageEditor = () => {
     }
   };
 
+  const editor = useEditor({
+    extensions: [StarterKit],
+    content: htmlContent,
+    onUpdate: ({ editor }) => {
+      setHtmlContent(editor.getHTML());
+    },
+  });
+
+  useEffect(() => {
+    if (editor && htmlContent !== editor.getHTML()) {
+      editor.commands.setContent(htmlContent || '', false);
+    }
+  }, [htmlContent]);
+
+  // Debug: log editor and htmlContent changes
+  useEffect(() => {
+    console.log('Tiptap editor instance:', editor);
+    console.log('htmlContent:', htmlContent);
+  }, [editor, htmlContent]);
+
   if (loading) {
     return (
       <Layout title="Editor">
         <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
         </div>
       </Layout>
     );
@@ -165,7 +189,7 @@ const LandingPageEditor = () => {
       <Layout title="Editor">
         <div className="text-center py-12">
           <h3 className="text-lg font-medium mb-4">Page not found</h3>
-          <Button onClick={() => navigate('/pages')}>
+          <Button onClick={() => navigate('/pages')} size="lg" className="mt-4 px-8 py-4">
             <ArrowLeft className="mr-2 h-4 w-4" /> Back to Pages
           </Button>
         </div>
@@ -182,6 +206,13 @@ const LandingPageEditor = () => {
           </Button>
           
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate(`/pages/${id}/ai-optimize`)}
+            >
+              <Sparkles className="mr-2 h-4 w-4" /> AI Optimize
+            </Button>
             <Dialog>
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm">
@@ -207,7 +238,6 @@ const LandingPageEditor = () => {
             </Dialog>
             
             <Button
-              variant="outline"
               size="sm"
               onClick={handleSave}
               disabled={saving}
@@ -247,11 +277,11 @@ const LandingPageEditor = () => {
           
           <TabsContent value="editor">
             <Card>
-              <CardContent className="p-4">
+              <CardContent className="p-4 space-y-4">
                 <textarea
                   value={htmlContent}
-                  onChange={(e) => setHtmlContent(e.target.value)}
-                  className="w-full h-[calc(100vh-18rem)] font-mono p-4 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  onChange={e => setHtmlContent(e.target.value)}
+                  className="w-full min-h-[400px] font-mono p-4 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </CardContent>
             </Card>
@@ -262,14 +292,32 @@ const LandingPageEditor = () => {
               <CardContent className="p-4">
                 <div className="text-center p-12 border-2 border-dashed rounded-md">
                   <h3 className="text-lg font-medium mb-2">Visual Editor Coming Soon</h3>
-                  <p className="text-muted-foreground">
-                    The WYSIWYG editor will be available in the next update.
-                  </p>
+                  <p className="text-muted-foreground">A full drag-and-drop visual editor is in development and will be available in a future update.</p>
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
+        {showOptimizer && (
+          <Dialog open={showOptimizer} onOpenChange={setShowOptimizer}>
+            <DialogContent className="max-w-3xl">
+              <DynamicLandingPageOptimizer
+                htmlContent={htmlContent}
+                pageInfo={{
+                  title: page.title,
+                  audience: '',
+                  industry: '',
+                  campaign_type: '',
+                  keywords: [],
+                }}
+                onApplyChanges={(updatedHtml) => {
+                  setHtmlContent(updatedHtml);
+                  setShowOptimizer(false);
+                }}
+              />
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
     </Layout>
   );

@@ -189,15 +189,13 @@ const Media = () => {
     <Layout>
       <div className="space-y-8">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Media Manager</h2>
-          <p className="text-muted-foreground mt-2">
-            Upload and manage media assets for your landing pages
-          </p>
+          <h2 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent animate-fade-in">Media Manager</h2>
+          <p className="text-muted-foreground mt-2 text-lg">Upload and manage media assets for your landing pages</p>
         </div>
 
         <div className="flex flex-col sm:flex-row justify-between gap-4">
           <div className="flex flex-col sm:flex-row gap-2">
-            <Button className="w-full sm:w-auto">
+            <Button className="w-full sm:w-auto transition-transform hover:scale-105 font-bold">
               <UploadCloud className="mr-2 h-4 w-4" /> Upload New
             </Button>
             

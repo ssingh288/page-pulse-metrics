@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -87,10 +86,8 @@ const Audience = () => {
       <div className="space-y-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight">Audience Insights</h2>
-            <p className="text-muted-foreground mt-2">
-              Understand your audience demographics and behavior
-            </p>
+            <h2 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent animate-fade-in">Audience Insights</h2>
+            <p className="text-muted-foreground mt-2 text-lg">Understand your audience demographics and behavior</p>
           </div>
           <div className="w-full sm:w-auto">
             <Select defaultValue={dateRange} onValueChange={setDateRange}>

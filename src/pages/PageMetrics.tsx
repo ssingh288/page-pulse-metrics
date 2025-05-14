@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -198,21 +197,10 @@ const PageMetrics = () => {
     <Layout title={`Metrics: ${page.title}`}>
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-          <Button variant="outline" size="sm" onClick={() => navigate('/pages')}>
-            <ArrowLeft className="mr-2 h-4 w-4" /> Back to Pages
+          <h2 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent animate-fade-in">Page Metrics</h2>
+          <Button variant="outline" onClick={refreshMetrics} className="transition-transform hover:scale-105">
+            <RefreshCcw className={refreshing ? "animate-spin mr-2 h-4 w-4" : "mr-2 h-4 w-4"} /> Refresh
           </Button>
-          
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={refreshMetrics}
-              disabled={refreshing}
-            >
-              <RefreshCcw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-              Refresh Metrics
-            </Button>
-          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

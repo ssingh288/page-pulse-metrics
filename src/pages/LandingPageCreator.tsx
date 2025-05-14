@@ -9,7 +9,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import { FileText, Image } from "lucide-react";
+import { FileText, Image, Sun, Moon, Trophy, User, Sparkles } from "lucide-react";
 import { LandingPageForm, LandingPageFormValues } from "@/components/landing-page/LandingPageForm";
 import { LandingPagePreview } from "@/components/landing-page/LandingPagePreview";
 import { ThemeOption } from "@/utils/landingPageGenerator";
@@ -26,6 +26,12 @@ import {
   generateWithNextTheme
 } from "@/components/landing-page/LandingPageGenerator";
 import DynamicLandingPageOptimizer from "@/components/DynamicLandingPageOptimizer";
+import { useTheme } from "next-themes";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 
 const LandingPageCreator = () => {
   const [generatingPage, setGeneratingPage] = useState(false);
@@ -49,6 +55,11 @@ const LandingPageCreator = () => {
     audience: "",
     keywords: ""
   });
+  const [showOnboarding, setShowOnboarding] = useState(true);
+  const { theme, setTheme } = useTheme();
+  const [achievements, setAchievements] = useState<string[]>([]);
+  const steps = ["Form", "Preview", "Optimize"];
+  const currentStep = activeTab === "form" ? 0 : activeTab === "preview" ? 1 : 2;
   
   // Auto-save draft periodically
   useEffect(() => {
@@ -285,70 +296,128 @@ const LandingPageCreator = () => {
     autoSaveDraft(formValues);
   };
 
+  useEffect(() => {
+    if (lastSaved && !achievements.includes("First Draft Saved!")) {
+      setAchievements(a => [...a, "First Draft Saved!"]);
+    }
+  }, [lastSaved, achievements]);
+
   return (
     <Layout title="Create Landing Page">
-      <div className="max-w-7xl mx-auto px-4">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2 mb-6 shadow-md">
-            <TabsTrigger value="form" className="data-[state=active]:bg-primary data-[state=active]:text-white">
-              <FileText className="mr-2 h-4 w-4" />
-              Page Details
-            </TabsTrigger>
-            <TabsTrigger value="preview" disabled={!previewHtml} className="data-[state=active]:bg-primary data-[state=active]:text-white">
-              <Image className="mr-2 h-4 w-4" />
-              Preview & Edit
-            </TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="form" className="space-y-4">
-            <LandingPageForm
-              initialValues={formValues}
-              onSubmit={handleSubmit}
-              isGenerating={generatingPage}
-              lastSaved={lastSaved}
-              autoSaving={autoSaving}
-              mediaType={mediaType}
-              setMediaType={setMediaType}
-              layoutStyle={layoutStyle}
-              setLayoutStyle={setLayoutStyle}
-            />
-          </TabsContent>
-          
-          <TabsContent value="preview" className="space-y-4">
-            {previewHtml && (
-              <>
-                <LandingPagePreview
-                  previewHtml={previewHtml}
-                  isGenerating={generatingPage}
-                  onRegenerateContent={handleRegenerateContent}
-                  onRegenerateTheme={handleRegenerateTheme}
-                  onToggleOptimizer={toggleOptimizer}
-                  onSavePage={handleSavePage}
-                  showOptimizer={showOptimizer}
-                  generatedContent={generatedContent}
-                />
-                
-                {showOptimizer && (
-                  <DynamicLandingPageOptimizer 
-                    htmlContent={previewHtml}
-                    pageInfo={{
-                      title: formValues.title,
-                      audience: formValues.audience,
-                      industry: formValues.industry,
-                      campaign_type: formValues.campaign_type,
-                      keywords: formValues.keywords
-                        .split(",")
-                        .map(keyword => keyword.trim())
-                        .filter(keyword => keyword.length > 0)
-                    }}
-                    onApplyChanges={handleApplyOptimizations}
-                  />
-                )}
-              </>
-            )}
-          </TabsContent>
-        </Tabs>
+      {/* Personalized Dashboard Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+        <div className="flex items-center gap-4">
+          <Avatar className="ring-2 ring-primary/30 shadow-lg">
+            <AvatarImage src={user?.user_metadata?.avatar_url || undefined} />
+            <AvatarFallback><User /></AvatarFallback>
+          </Avatar>
+          <div>
+            <h2 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent animate-fade-in">Welcome{user?.user_metadata?.full_name ? `, ${user.user_metadata.full_name}` : "!"}</h2>
+            <p className="text-muted-foreground text-lg">Let's build your next high-converting landing page 🚀</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="flex flex-col items-center">
+            <span className="text-2xl font-bold text-primary">{draftId ? 1 : 0}</span>
+            <span className="text-xs text-muted-foreground">Drafts</span>
+          </div>
+          <div className="flex flex-col items-center">
+            <span className="text-2xl font-bold text-primary">{achievements.length}</span>
+            <span className="text-xs text-muted-foreground">Achievements</span>
+          </div>
+          <Button variant="ghost" size="icon" aria-label="Toggle theme" onClick={() => setTheme(theme === "dark" ? "light" : "dark")} className="transition-colors hover:bg-primary/10">{theme === "dark" ? <Sun /> : <Moon />}</Button>
+        </div>
       </div>
+      {/* Onboarding Tooltip */}
+      {showOnboarding && (
+        <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20 flex items-center gap-4 animate-fade-in shadow-md">
+          <Sparkles className="h-6 w-6 text-primary animate-bounce" />
+          <span className="text-base font-medium">Tip: Fill out the form, preview your page, and optimize with AI for best results!</span>
+          <Button variant="outline" size="sm" onClick={() => setShowOnboarding(false)} className="ml-auto">Got it</Button>
+        </div>
+      )}
+      {/* Gamification Achievements */}
+      {achievements.length > 0 && (
+        <div className="mb-6 flex gap-2 flex-wrap">
+          {achievements.map((ach, i) => (
+            <Badge key={i} variant="secondary" className="flex items-center gap-1 bg-gradient-to-r from-yellow-300 to-yellow-500 text-yellow-900 animate-pulse shadow">
+              <Trophy className="h-4 w-4" /> {ach}
+            </Badge>
+          ))}
+        </div>
+      )}
+      {/* Progress Bar for Steps */}
+      <div className="mb-6">
+        <Progress value={((currentStep + 1) / steps.length) * 100} className="h-3 rounded-full bg-muted/30 shadow-inner" />
+        <div className="flex justify-between text-xs text-muted-foreground mt-1">
+          {steps.map((step, idx) => (
+            <span key={step} className={idx === currentStep ? "font-bold text-primary" : ""}>{step}</span>
+          ))}
+        </div>
+      </div>
+      {/* Main Card with Tabs */}
+      <Card className="glassmorphic-card shadow-2xl border-0 bg-white/80 backdrop-blur-lg rounded-2xl">
+        <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/10 rounded-t-2xl">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid grid-cols-3 w-full mb-4 rounded-xl">
+              <TabsTrigger value="form" className="text-lg font-semibold transition-colors hover:bg-primary/10">Form</TabsTrigger>
+              <TabsTrigger value="preview" className="text-lg font-semibold transition-colors hover:bg-primary/10">Preview</TabsTrigger>
+              <TabsTrigger value="optimizer" className="text-lg font-semibold transition-colors hover:bg-primary/10">AI Optimizer</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </CardHeader>
+        <CardContent>
+          {activeTab === "form" && (
+            <div className="p-4">
+              <LandingPageForm
+                initialValues={formValues}
+                onSubmit={handleSubmit}
+                isGenerating={generatingPage}
+                lastSaved={lastSaved}
+                autoSaving={autoSaving}
+                mediaType={mediaType}
+                setMediaType={setMediaType}
+                layoutStyle={layoutStyle}
+                setLayoutStyle={setLayoutStyle}
+              />
+            </div>
+          )}
+          {activeTab === "preview" && (
+            <div className="p-4">
+              <LandingPagePreview
+                previewHtml={previewHtml}
+                isGenerating={generatingPage}
+                onRegenerateContent={handleRegenerateContent}
+                onRegenerateTheme={handleRegenerateTheme}
+                onToggleOptimizer={toggleOptimizer}
+                onSavePage={handleSavePage}
+                showOptimizer={showOptimizer}
+                generatedContent={generatedContent}
+              />
+              <div className="flex justify-end mt-4">
+                <Button onClick={handleSavePage} disabled={generatingPage} className="font-bold transition-transform hover:scale-105">
+                  Save & Publish
+                </Button>
+              </div>
+            </div>
+          )}
+          {activeTab === "optimizer" && (
+            <div className="p-4">
+              <DynamicLandingPageOptimizer
+                htmlContent={previewHtml}
+                pageInfo={{
+                  title: formValues.title,
+                  audience: formValues.audience,
+                  industry: formValues.industry,
+                  campaign_type: formValues.campaign_type,
+                  keywords: formValues.keywords.split(",").map(k => k.trim()),
+                }}
+                onApplyChanges={handleApplyOptimizations}
+              />
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </Layout>
   );
 };

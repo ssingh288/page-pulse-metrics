@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -92,17 +91,15 @@ const ABTests = () => {
     <Layout>
       <div className="space-y-8">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">A/B Testing</h2>
-          <p className="text-muted-foreground mt-2">
-            Create and manage A/B tests for your landing pages
-          </p>
+          <h2 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent animate-fade-in">A/B Testing</h2>
+          <p className="text-muted-foreground mt-2 text-lg">Create and manage A/B tests for your landing pages</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="md:col-span-1 space-y-6">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle>Test Campaigns</CardTitle>
+            <Card className="glassmorphic-card shadow-2xl border-0 bg-white/80 backdrop-blur-lg rounded-2xl">
+              <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/10 rounded-t-2xl pb-3">
+                <CardTitle className="text-xl font-bold">Test Campaigns</CardTitle>
                 <CardDescription>Manage your active and past tests</CardDescription>
               </CardHeader>
               <CardContent className="p-0">
@@ -119,7 +116,7 @@ const ABTests = () => {
                       <button
                         key={test.id}
                         onClick={() => setSelectedTest(test.id)}
-                        className={`flex items-center justify-between px-4 py-3 border-b last:border-0 text-left hover:bg-muted/50 transition-colors ${selectedTest === test.id ? 'bg-muted/50' : ''}`}
+                        className={`flex items-center justify-between px-4 py-3 border-b last:border-0 text-left hover:bg-muted/50 transition-colors ${selectedTest === test.id ? 'bg-muted/50 ring-2 ring-primary/30' : ''}`}
                       >
                         <div>
                           <div className="font-medium">{test.name}</div>
@@ -137,16 +134,16 @@ const ABTests = () => {
                 </nav>
               </CardContent>
               <CardFooter className="pt-4 pb-4">
-                <Button className="w-full">
+                <Button className="w-full transition-transform hover:scale-105 font-bold">
                   <Beaker className="mr-2 h-4 w-4" />
                   Create New Test
                 </Button>
               </CardFooter>
             </Card>
             
-            <Card>
-              <CardHeader>
-                <CardTitle>Performance Overview</CardTitle>
+            <Card className="glassmorphic-card shadow-2xl border-0 bg-white/80 backdrop-blur-lg rounded-2xl">
+              <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/10 rounded-t-2xl">
+                <CardTitle className="text-xl font-bold">Performance Overview</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 {loading ? (

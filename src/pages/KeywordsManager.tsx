@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -181,7 +180,7 @@ const KeywordsManager = () => {
     return (
       <Layout title="Keywords Manager">
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
         </div>
       </Layout>
     );
@@ -192,7 +191,7 @@ const KeywordsManager = () => {
       <Layout title="Keywords Manager">
         <div className="text-center py-12">
           <h3 className="text-lg font-medium mb-4">Page not found</h3>
-          <Button onClick={() => navigate('/pages')}>
+          <Button onClick={() => navigate('/pages')} size="lg" className="mt-4 px-8 py-4">
             <ArrowLeft className="mr-2 h-4 w-4" /> Back to Pages
           </Button>
         </div>

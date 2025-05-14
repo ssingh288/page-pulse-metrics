@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { HeatmapView } from "@/components/heatmap/HeatmapView";
@@ -49,10 +48,8 @@ const Heatmap = () => {
     <Layout>
       <div className="space-y-8">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Heatmap Analysis</h2>
-          <p className="text-muted-foreground mt-2">
-            Visualize how users interact with your landing pages
-          </p>
+          <h2 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent animate-fade-in">Heatmap Analysis</h2>
+          <p className="text-muted-foreground mt-2 text-lg">Visualize how users interact with your landing pages</p>
         </div>
 
         <div className="flex flex-col md:flex-row gap-4">
@@ -98,8 +95,8 @@ const Heatmap = () => {
           </div>
           
           <div className="space-y-6">
-            <Card>
-              <CardHeader>
+            <Card className="glassmorphic-card shadow-2xl border-0 bg-white/80 backdrop-blur-lg rounded-2xl">
+              <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/10 rounded-t-2xl">
                 <CardTitle>Click Statistics</CardTitle>
                 <CardDescription>Key metrics for this page</CardDescription>
               </CardHeader>
@@ -139,8 +136,8 @@ const Heatmap = () => {
               </CardContent>
             </Card>
             
-            <Card>
-              <CardHeader>
+            <Card className="glassmorphic-card shadow-2xl border-0 bg-white/80 backdrop-blur-lg rounded-2xl">
+              <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/10 rounded-t-2xl">
                 <CardTitle>Recommendations</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">

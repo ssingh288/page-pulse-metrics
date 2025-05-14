@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,7 +10,8 @@ import {
   PageOptimizationSuggestion, 
   AdSuggestion,
   generatePageOptimizations,
-  generateAdSuggestions 
+  generateAdSuggestions,
+  applyOptimizationsToHTML
 } from "@/utils/aiService";
 
 interface DynamicLandingPageOptimizerProps {
@@ -137,202 +137,70 @@ const DynamicLandingPageOptimizer: React.FC<DynamicLandingPageOptimizerProps> = 
   }, [isLoadingOptimizations]);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center">
-          <Sparkles className="h-5 w-5 text-primary mr-2" />
-          AI Landing Page Optimizer
-        </CardTitle>
-        <CardDescription>
-          Get AI-powered suggestions to improve your landing page performance and generate platform-specific ad content
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="p-0">
-        <Tabs 
-          value={activeTab} 
-          onValueChange={setActiveTab} 
-          className="w-full"
-        >
-          <TabsList className="grid grid-cols-2 m-6">
-            <TabsTrigger value="page-optimization" className="flex items-center">
-              <LineChart className="h-4 w-4 mr-2" />
-              Page Optimization
-            </TabsTrigger>
-            <TabsTrigger value="ad-generation" className="flex items-center">
-              <LayoutGrid className="h-4 w-4 mr-2" />
-              Ad Generation
-            </TabsTrigger>
-          </TabsList>
-            
-          <TabsContent value="page-optimization" className="p-6 pt-2">
-            <div className="flex flex-col gap-4">
-              {!optimizationSuggestions && !isLoadingOptimizations && (
-                <div className="text-center py-8">
-                  <Sparkles className="h-12 w-12 mx-auto text-primary/30 mb-3" />
-                  <h3 className="text-lg font-medium mb-2">Optimize Your Landing Page</h3>
-                  <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">
-                    Our AI will analyze your landing page and provide actionable suggestions 
-                    to improve your conversion rate and SEO performance.
-                  </p>
-                  <Button 
-                    onClick={handleGenerateOptimizations}
-                    className="mx-auto"
-                  >
-                    <Sparkles className="mr-2 h-4 w-4" />
-                    Generate Optimization Suggestions
-                  </Button>
-                </div>
-              )}
-              
-              {(optimizationSuggestions || isLoadingOptimizations) && (
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-lg font-medium">Optimization Suggestions</h3>
-                      {suggestionHistory.length > 0 && (
-                        <Button 
-                          variant="outline" 
-                          size="icon"
-                          onClick={() => setShowVersionHistory(!showVersionHistory)}
-                          className="h-8 w-8"
-                        >
-                          <History className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                    
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={handleGenerateOptimizations}
-                      disabled={isLoadingOptimizations}
-                    >
-                      {isLoadingOptimizations ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <RefreshCw className="h-4 w-4 mr-2" />
-                      )}
-                      Regenerate
-                    </Button>
-                  </div>
-                  
-                  {/* Multiple suggestions selector */}
-                  {allOptimizationSuggestions.length > 1 && !showVersionHistory && (
-                    <div className="flex gap-2 overflow-x-auto pb-2">
-                      {allOptimizationSuggestions.map((_, index) => {
-                        const suggestion = allOptimizationSuggestions[index];
-                        const trafficImprovement = suggestion.trafficEstimate ? 
-                          parseFloat(suggestion.trafficEstimate.potential.replace('%', '')) - 
-                          parseFloat(suggestion.trafficEstimate.current.replace('%', '')) : 0;
-                        
-                        return (
-                          <Card 
-                            key={index} 
-                            className={`p-3 cursor-pointer min-w-[200px] ${selectedSuggestionIndex === index ? 'border-primary' : ''}`}
-                            onClick={() => handleSelectSuggestion(index)}
-                          >
-                            <div className="text-sm font-medium">Suggestion {index + 1}</div>
-                            <div className="text-xs text-muted-foreground mt-1">Potential traffic increase</div>
-                            <div className="text-lg font-bold text-green-600">+{trafficImprovement.toFixed(1)}%</div>
-                          </Card>
-                        );
-                      })}
-                    </div>
-                  )}
-                  
-                  <OptimizationPanel
-                    optimizationSuggestions={optimizationSuggestions}
-                    isLoading={isLoadingOptimizations}
-                    originalHtml={htmlContent}
-                    onApplySuggestion={handleApplySuggestion}
-                    suggestionHistory={showVersionHistory ? suggestionHistory : undefined}
-                    onSelectFromHistory={showVersionHistory ? handleSelectFromHistory : undefined}
-                  />
-                </div>
-              )}
+    <div className="flex flex-col min-h-screen bg-gray-50">
+      {/* Sticky Header */}
+      <header className="sticky top-0 z-30 bg-white border-b flex items-center justify-between px-6 py-4 shadow-sm">
+        <div className="flex items-center gap-4">
+          <Sparkles className="h-7 w-7 text-primary" />
+          <span className="text-xl font-bold">AI Landing Page Optimizer</span>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => onApplyChanges(htmlContent)}>Cancel</Button>
+          <Button onClick={() => onApplyChanges(optimizationSuggestions ? applyOptimizationsToHTML(htmlContent, optimizationSuggestions) : htmlContent)} disabled={!optimizationSuggestions}>Apply Changes</Button>
+          <Button variant="outline" onClick={handleGenerateOptimizations} disabled={isLoadingOptimizations}>
+            {isLoadingOptimizations ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+            Regenerate
+          </Button>
+        </div>
+      </header>
+      <div className="flex flex-1 overflow-hidden">
+        {/* Left: Suggestions and Controls */}
+        <div className="w-full md:w-1/2 flex flex-col h-full overflow-y-auto p-6 gap-6">
+          {/* Theme/Layout Switcher */}
+          <div className="mb-2">
+            <div className="font-semibold mb-2">Theme/Layout</div>
+            <div className="flex gap-2 overflow-x-auto pb-2">
+              {/* TODO: Render theme/layout thumbnails here */}
+              <div className="w-24 h-16 bg-muted rounded border flex items-center justify-center text-xs cursor-pointer hover:ring-2 ring-primary transition">Theme 1</div>
+              <div className="w-24 h-16 bg-muted rounded border flex items-center justify-center text-xs cursor-pointer hover:ring-2 ring-primary transition">Theme 2</div>
+              <div className="w-24 h-16 bg-muted rounded border flex items-center justify-center text-xs cursor-pointer hover:ring-2 ring-primary transition">Theme 3</div>
             </div>
-          </TabsContent>
-            
-          <TabsContent value="ad-generation" className="p-6 pt-2">
-            <div className="flex flex-col gap-4">
-              {!adSuggestions && !isLoadingAds && (
-                <div className="text-center py-8">
-                  <LayoutGrid className="h-12 w-12 mx-auto text-primary/30 mb-3" />
-                  <h3 className="text-lg font-medium mb-2">Generate Multi-Platform Ads</h3>
-                  <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">
-                    Our AI will generate platform-specific ad content for Facebook, Instagram,
-                    LinkedIn, Twitter, and Google based on your landing page.
-                  </p>
-                  <Button 
-                    onClick={handleGenerateAdSuggestions}
-                    className="mx-auto"
-                  >
-                    <Sparkles className="mr-2 h-4 w-4" />
-                    Generate Ad Suggestions
-                  </Button>
-                </div>
-              )}
-              
-              {(adSuggestions || isLoadingAds) && (
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-lg font-medium">Platform-Specific Ads</h3>
-                      
-                      {adSuggestionHistory.length > 0 && (
-                        <div className="flex gap-2">
-                          {adSuggestionHistory.map((_, index) => (
-                            <Button
-                              key={index}
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleSelectAdFromHistory(index)}
-                            >
-                              Version {index + 1}
-                            </Button>
-                          ))}
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setAdSuggestions(adSuggestionHistory[adSuggestionHistory.length - 1])}
-                          >
-                            Latest
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                    
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={handleGenerateAdSuggestions}
-                      disabled={isLoadingAds}
-                    >
-                      {isLoadingAds ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <RefreshCw className="h-4 w-4 mr-2" />
-                      )}
-                      Regenerate
-                    </Button>
-                  </div>
-                  
-                  <AdPreviewPanel
-                    adSuggestions={adSuggestions}
-                    isLoading={isLoadingAds}
-                  />
-                </div>
-              )}
-            </div>
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-      <CardFooter className="justify-between border-t bg-muted/50 p-6">
-        <p className="text-sm text-muted-foreground">
-          AI suggestions are based on conversion rate optimization best practices
-        </p>
-      </CardFooter>
-    </Card>
+          </div>
+          {/* Generate Suggestions Button */}
+          <Button
+            variant="default"
+            onClick={handleGenerateOptimizations}
+            disabled={isLoadingOptimizations}
+            className="mb-4"
+          >
+            {isLoadingOptimizations ? "Generating..." : "Generate Suggestions"}
+          </Button>
+          {/* AI Suggestions, grouped by type */}
+          <div className="space-y-6">
+            <OptimizationPanel
+              optimizationSuggestions={optimizationSuggestions}
+              isLoading={isLoadingOptimizations}
+              originalHtml={htmlContent}
+              onApplySuggestion={handleApplySuggestion}
+              suggestionHistory={showVersionHistory ? suggestionHistory : undefined}
+              onSelectFromHistory={showVersionHistory ? handleSelectFromHistory : undefined}
+            />
+          </div>
+        </div>
+        {/* Right: Live Mobile Preview */}
+        <div className="hidden md:flex w-1/2 h-full bg-muted/10 p-8 items-center justify-center overflow-y-auto">
+          <div className="w-[375px] h-[700px] bg-white rounded-2xl shadow-2xl border flex flex-col overflow-hidden">
+            <div className="font-semibold text-center py-2 bg-muted/20 border-b">Mobile Preview</div>
+            <iframe
+              title="Landing Page Preview"
+              srcDoc={optimizationSuggestions ? applyOptimizationsToHTML(htmlContent, optimizationSuggestions) : htmlContent}
+              className="w-full h-full border-0"
+              style={{ borderRadius: 0 }}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 

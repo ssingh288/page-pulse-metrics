@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
@@ -97,9 +96,9 @@ const Profile = () => {
   return (
     <Layout title="Profile">
       <div className="max-w-3xl mx-auto space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Your Profile</CardTitle>
+        <Card className="glassmorphic-card shadow-2xl border-0 bg-white/80 backdrop-blur-lg rounded-2xl">
+          <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/10 rounded-t-2xl">
+            <CardTitle className="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent animate-fade-in">Your Profile</CardTitle>
             <CardDescription>
               Manage your account information
             </CardDescription>
@@ -107,7 +106,7 @@ const Profile = () => {
           <CardContent>
             <div className="space-y-6">
               <div className="flex items-center justify-center">
-                <div className="h-24 w-24 rounded-full bg-muted flex items-center justify-center">
+                <div className="h-24 w-24 rounded-full bg-muted flex items-center justify-center ring-2 ring-primary/30 shadow-lg">
                   {profile?.avatar_url ? (
                     <img
                       src={profile.avatar_url}
@@ -137,7 +136,7 @@ const Profile = () => {
             </div>
           </CardContent>
           <CardFooter>
-            <Button onClick={handleUpdateProfile} disabled={saving}>
+            <Button onClick={handleUpdateProfile} disabled={saving} className="font-bold transition-transform hover:scale-105">
               {saving ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
@@ -148,9 +147,9 @@ const Profile = () => {
           </CardFooter>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Account Settings</CardTitle>
+        <Card className="glassmorphic-card shadow-2xl border-0 bg-white/80 backdrop-blur-lg rounded-2xl">
+          <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/10 rounded-t-2xl">
+            <CardTitle className="text-2xl font-extrabold tracking-tight">Account Settings</CardTitle>
             <CardDescription>
               Manage your account preferences and settings
             </CardDescription>
@@ -163,9 +162,7 @@ const Profile = () => {
                   Receive updates about your page performance
                 </p>
               </div>
-              <Button variant="outline" size="sm">
-                Configure
-              </Button>
+              <Button variant="outline" size="sm" className="transition-colors hover:bg-primary/10">Configure</Button>
             </div>
             <Separator />
             <div className="flex items-center justify-between">
@@ -175,9 +172,7 @@ const Profile = () => {
                   Update your account password
                 </p>
               </div>
-              <Button variant="outline" size="sm">
-                Change
-              </Button>
+              <Button variant="outline" size="sm" className="transition-colors hover:bg-primary/10">Change</Button>
             </div>
             <Separator />
             <div className="flex items-center justify-between">
@@ -187,9 +182,7 @@ const Profile = () => {
                   Permanently delete your account and all data
                 </p>
               </div>
-              <Button variant="destructive" size="sm">
-                Delete
-              </Button>
+              <Button variant="destructive" size="sm" className="transition-transform hover:scale-105">Delete</Button>
             </div>
           </CardContent>
         </Card>
