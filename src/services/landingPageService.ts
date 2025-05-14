@@ -13,6 +13,7 @@ export interface LandingPageData {
   html_content: string;
   metadata?: string; // To store JSON stringified metadata
   is_draft?: boolean;
+  generated_content?: string;
 }
 
 export interface LandingPageFormData {
@@ -125,7 +126,7 @@ export async function publishLandingPage(
   formValues: LandingPageFormValues,
   existingPageId: string | null,
   htmlContent: string,
-  generatedContent: any
+  generatedContent: Record<string, unknown>
 ) {
   try {
     // Process keywords into an array

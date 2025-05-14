@@ -38,7 +38,7 @@ const LandingPageCreator = () => {
   const [generatingPage, setGeneratingPage] = useState(false);
   const [previewHtml, setPreviewHtml] = useState("");
   const [activeTab, setActiveTab] = useState("form");
-  const [generatedContent, setGeneratedContent] = useState<any>({});
+  const [generatedContent, setGeneratedContent] = useState<Record<string, unknown>>({});
   const [selectedThemeIndex, setSelectedThemeIndex] = useState(0);
   const [themeOptions, setThemeOptions] = useState<ThemeOption[]>([]);
   const { user } = useAuth();
@@ -105,28 +105,28 @@ const LandingPageCreator = () => {
         setActiveTab("preview");
         
         // Attempt to reconstruct the generated content and theme options
-        // Fix: Check if metadata exists before trying to parse it
-        if (draft.metadata) {
+        // Check if metadata exists before trying to parse it
+        if ('metadata' in draft && draft.metadata) {
           try {
-            const metadata = typeof draft.metadata === 'string' 
+            const parsedMetadata = typeof draft.metadata === 'string' 
               ? JSON.parse(draft.metadata) 
               : draft.metadata;
               
-            if (metadata.generatedContent) {
-              setGeneratedContent(metadata.generatedContent);
+            if (parsedMetadata.generatedContent) {
+              setGeneratedContent(parsedMetadata.generatedContent);
             }
             
-            if (metadata.themeOptions) {
-              setThemeOptions(metadata.themeOptions);
-              setSelectedThemeIndex(metadata.selectedThemeIndex || 0);
+            if (parsedMetadata.themeOptions) {
+              setThemeOptions(parsedMetadata.themeOptions);
+              setSelectedThemeIndex(parsedMetadata.selectedThemeIndex || 0);
             }
             
-            if (metadata.mediaType) {
-              setMediaType(metadata.mediaType);
+            if (parsedMetadata.mediaType) {
+              setMediaType(parsedMetadata.mediaType);
             }
             
-            if (metadata.layoutStyle) {
-              setLayoutStyle(metadata.layoutStyle);
+            if (parsedMetadata.layoutStyle) {
+              setLayoutStyle(parsedMetadata.layoutStyle);
             }
           } catch (e) {
             console.error("Error parsing draft metadata", e);

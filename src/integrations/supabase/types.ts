@@ -93,10 +93,13 @@ export type Database = {
           audience: string
           campaign_type: string
           created_at: string
+          generated_content: string | null
           html_content: string | null
           id: string
           industry: string
           initial_keywords: string[]
+          is_draft: boolean
+          metadata: string | null
           published_at: string | null
           published_url: string | null
           title: string
@@ -107,10 +110,13 @@ export type Database = {
           audience: string
           campaign_type: string
           created_at?: string
+          generated_content?: string | null
           html_content?: string | null
           id?: string
           industry: string
           initial_keywords: string[]
+          is_draft?: boolean
+          metadata?: string | null
           published_at?: string | null
           published_url?: string | null
           title: string
@@ -121,10 +127,13 @@ export type Database = {
           audience?: string
           campaign_type?: string
           created_at?: string
+          generated_content?: string | null
           html_content?: string | null
           id?: string
           industry?: string
           initial_keywords?: string[]
+          is_draft?: boolean
+          metadata?: string | null
           published_at?: string | null
           published_url?: string | null
           title?: string
