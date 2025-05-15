@@ -30,7 +30,7 @@ import {
   Undo2,
   Upload
 } from "lucide-react";
-import HistoryIconComponent from "@/components/HistoryIcon";
+import HistoryIcon from "@/components/HistoryIcon";
 import {
   Card,
   CardContent,
@@ -72,7 +72,7 @@ interface PageInfo {
   industry: string; 
   campaign_type: string;
   initial_keywords: string[];
-  created_at?: string; // Make this optional since it might not exist in some places
+  created_at?: string;
 }
 
 interface AISuggestion {
@@ -787,7 +787,7 @@ const AIOptimizer = () => {
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
                       <h3 className="text-lg font-semibold flex items-center gap-2">
-                        <HistoryIconComponent className="h-5 w-5 text-primary" /> Version History
+                        <HistoryIcon className="h-5 w-5 text-primary" /> Version History
                       </h3>
                       <Button variant="ghost" size="sm" onClick={() => setShowVersionHistory(false)}>
                         <X className="h-4 w-4" />
@@ -833,7 +833,7 @@ const AIOptimizer = () => {
                           className="ml-auto mr-2"
                           onClick={() => setShowVersionHistory(true)}
                         >
-                          <HistoryIconComponent className="h-4 w-4 mr-1" /> History
+                          <HistoryIcon className="h-4 w-4 mr-1" /> History
                         </Button>
                         <Button 
                           variant="default" 

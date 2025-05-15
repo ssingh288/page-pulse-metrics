@@ -79,7 +79,6 @@ export const saveOptimizationHistory = async (
   optimizedContent: string
 ) => {
   try {
-    // Use insert instead of from().insert() to avoid the type error
     const { error } = await supabase
       .from('optimization_history')
       .insert({
