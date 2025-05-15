@@ -1,8 +1,9 @@
+
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
-import { Plus, Search, Edit, BarChart2, ExternalLink, Sparkles, Trash2, FileText, Download, Globe } from "lucide-react";
+import { Plus, Search, Edit, BarChart2, ExternalLink, Sparkles, Trash2, FileText, Globe } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Card,
@@ -47,6 +48,10 @@ interface LandingPage {
   updated_at: string;
 }
 
+// Define filter types
+type FilterType = "all" | "published" | "draft";
+type SortDirection = "asc" | "desc";
+
 const LandingPages = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
@@ -55,6 +60,10 @@ const LandingPages = () => {
   const [showOnboarding, setShowOnboarding] = useState(true);
   const { theme, setTheme } = useTheme();
   const [achievements, setAchievements] = useState<string[]>([]);
+  
+  // New state for filtering and sorting
+  const [filter, setFilter] = useState<FilterType>("all");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
   useEffect(() => {
     const fetchPages = async () => {
@@ -66,7 +75,8 @@ const LandingPages = () => {
         const { data, error } = await supabase
           .from('landing_pages')
           .select('*')
-          .eq('user_id', user.id);
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: sortDirection === 'asc' });
         
         if (error) {
           throw error;
@@ -81,12 +91,22 @@ const LandingPages = () => {
     };
 
     fetchPages();
-  }, [user]);
+  }, [user, sortDirection]);
 
-  const filteredPages = pages.filter(page => 
-    page.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    page.campaign_type.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Filter pages based on search term and filter type
+  const filteredPages = pages.filter(page => {
+    // First filter by search term
+    const matchesSearch = 
+      page.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      page.campaign_type.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Then filter by type
+    if (filter === "all") return matchesSearch;
+    if (filter === "published") return matchesSearch && page.published_at !== null;
+    if (filter === "draft") return matchesSearch && page.published_at === null;
+    
+    return matchesSearch;
+  });
 
   const handleDeletePage = async (id: string) => {
     try {
@@ -106,8 +126,14 @@ const LandingPages = () => {
     }
   };
 
+  // Toggle sort direction
+  const toggleSortDirection = () => {
+    setSortDirection(prev => prev === "desc" ? "asc" : "desc");
+  };
+
   const publishedCount = pages.filter(p => p.published_url).length;
   const draftCount = pages.length - publishedCount;
+  
   useEffect(() => {
     if (publishedCount === 1 && !achievements.includes("First Page Published!")) {
       setAchievements(a => [...a, "First Page Published!"]);
@@ -116,6 +142,13 @@ const LandingPages = () => {
       setAchievements(a => [...a, "5 Pages Created!"]);
     }
   }, [publishedCount, pages.length, achievements]);
+
+  // Helper function to determine active filter style
+  const getFilterStyle = (filterType: FilterType) => {
+    return filter === filterType 
+      ? "bg-primary/10 text-primary font-bold border-b-2 border-primary" 
+      : "hover:bg-primary/5";
+  };
 
   return (
     <Layout>
@@ -132,19 +165,30 @@ const LandingPages = () => {
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <div className="flex flex-col items-center">
+          <div 
+            className={`flex flex-col items-center cursor-pointer transition-all p-2 rounded-lg ${getFilterStyle("all")}`}
+            onClick={() => setFilter("all")}
+          >
             <span className="text-2xl font-bold text-primary">{pages.length}</span>
             <span className="text-xs text-muted-foreground">Total Pages</span>
           </div>
-          <div className="flex flex-col items-center">
+          <div 
+            className={`flex flex-col items-center cursor-pointer transition-all p-2 rounded-lg ${getFilterStyle("published")}`}
+            onClick={() => setFilter("published")}
+          >
             <span className="text-2xl font-bold text-green-600">{publishedCount}</span>
             <span className="text-xs text-muted-foreground">Published</span>
           </div>
-          <div className="flex flex-col items-center">
+          <div 
+            className={`flex flex-col items-center cursor-pointer transition-all p-2 rounded-lg ${getFilterStyle("draft")}`}
+            onClick={() => setFilter("draft")}
+          >
             <span className="text-2xl font-bold text-yellow-600">{draftCount}</span>
             <span className="text-xs text-muted-foreground">Drafts</span>
           </div>
-          <Button variant="ghost" size="icon" aria-label="Toggle theme" onClick={() => setTheme(theme === "dark" ? "light" : "dark")} className="transition-colors hover:bg-primary/10">{theme === "dark" ? <Sun /> : <Moon />}</Button>
+          <Button variant="ghost" size="icon" aria-label="Toggle theme" onClick={() => setTheme(theme === "dark" ? "light" : "dark")} className="transition-colors hover:bg-primary/10">
+            {theme === "dark" ? <Sun /> : <Moon />}
+          </Button>
         </div>
       </div>
       {/* Onboarding Tooltip */}
@@ -178,9 +222,12 @@ const LandingPages = () => {
         <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/10 rounded-t-2xl">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="space-y-1">
-              <CardTitle className="text-2xl font-bold">Your Pages</CardTitle>
+              <CardTitle className="text-2xl font-bold">
+                {filter === "all" ? "Your Pages" : 
+                 filter === "published" ? "Published Pages" : "Draft Pages"}
+              </CardTitle>
               <CardDescription>
-                {pages.length} {pages.length === 1 ? 'page' : 'pages'} created
+                {filteredPages.length} {filteredPages.length === 1 ? 'page' : 'pages'} {filter !== "all" ? `(${filter})` : ""} found
               </CardDescription>
             </div>
             <div className="flex gap-2">
@@ -193,6 +240,18 @@ const LandingPages = () => {
                   className="pl-8 w-[200px]"
                 />
               </div>
+              <Button 
+                variant="outline" 
+                size="icon"
+                onClick={toggleSortDirection}
+                className="flex items-center gap-1"
+                title={`Sort by date: ${sortDirection === 'desc' ? 'Newest first' : 'Oldest first'}`}
+              >
+                {sortDirection === "desc" ? 
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-arrow-down-a-z"><path d="m3 16 4 4 4-4"/><path d="M7 20V4"/><path d="M20 8h-5"/><path d="M15 10V6.5a2.5 2.5 0 0 1 5 0V10"/><path d="M15 14h5l-5 6h5"/></svg> : 
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-arrow-up-a-z"><path d="m3 8 4-4 4 4"/><path d="M7 4v16"/><path d="M20 8h-5"/><path d="M15 10V6.5a2.5 2.5 0 0 1 5 0V10"/><path d="M15 14h5l-5 6h5"/></svg>
+                }
+              </Button>
               <Button asChild className="font-bold transition-transform hover:scale-105">
                 <Link to="/create-page">
                   <Plus className="mr-2 h-4 w-4" /> Create New Page
@@ -233,34 +292,36 @@ const LandingPages = () => {
                   <CardContent className="p-4 pt-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div className="flex items-center gap-2">
                       {page.published_url && (
-                        <Button variant="ghost" size="icon" asChild className="hover:bg-primary/10">
+                        <Button variant="outline" size="sm" asChild className="flex items-center gap-1 transition-transform hover:scale-105">
                           <a href={page.published_url} target="_blank" rel="noopener noreferrer">
-                            <ExternalLink className="h-4 w-4" />
+                            <Globe className="mr-1 h-4 w-4" /> View Page
                           </a>
                         </Button>
                       )}
                     </div>
                     <div className="flex gap-2">
                       <Button asChild variant="outline" size="sm" className="transition-transform hover:scale-105">
-                        <Link to={`/pages/${page.id}/edit`} className="flex items-center cursor-pointer">
+                        <Link to={`/pages/${page.id}/metrics`} className="flex items-center">
+                          <BarChart2 className="mr-2 h-4 w-4" /> Metrics
+                        </Link>
+                      </Button>
+                      <Button asChild variant="outline" size="sm" className="transition-transform hover:scale-105">
+                        <Link to={`/pages/${page.id}/edit`} className="flex items-center">
                           <Edit className="mr-2 h-4 w-4" /> Edit
                         </Link>
                       </Button>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="outline" size="sm">More</Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem asChild>
-                            <Link to={`/pages/${page.id}/edit`} className="flex items-center cursor-pointer">
-                              <Edit className="mr-2 h-4 w-4" /> Edit
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleDeletePage(page.id)} className="flex items-center cursor-pointer text-red-600">
-                            <Trash2 className="mr-2 h-4 w-4" /> Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                        onClick={() => {
+                          if (window.confirm(`Are you sure you want to delete "${page.title}"?`)) {
+                            handleDeletePage(page.id);
+                          }
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
