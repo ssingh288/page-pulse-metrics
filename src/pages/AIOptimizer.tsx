@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -30,7 +31,7 @@ import {
   Undo2,
   Upload
 } from "lucide-react";
-import HistoryIcon from "@/components/HistoryIcon";
+import { HistoryIcon } from "@/components/HistoryIcon";
 import {
   Card,
   CardContent,
@@ -748,7 +749,7 @@ const AIOptimizer = () => {
           size="sm"
           onClick={() => setShowVersionHistory(!showVersionHistory)}
         >
-          <Target className="mr-2 h-4 w-4" />
+          <HistoryIcon className="mr-2 h-4 w-4" />
           {showVersionHistory ? "Hide History" : "Version History"}
         </Button>
         <Button 
@@ -847,29 +848,31 @@ const AIOptimizer = () => {
                       </div>
                     </div>
                     
-                    <TabsList className="mb-4 w-full">
-                      <TabsTrigger 
-                        value="all" 
-                        onClick={() => setCurrentTab("all")}
-                        className={currentTab === "all" ? "bg-primary text-primary-foreground" : ""}
-                      >
-                        All ({suggestions.length})
-                      </TabsTrigger>
-                      <TabsTrigger 
-                        value="pending" 
-                        onClick={() => setCurrentTab("pending")}
-                        className={currentTab === "pending" ? "bg-primary text-primary-foreground" : ""}
-                      >
-                        Pending ({suggestions.filter(s => s.status === "pending").length})
-                      </TabsTrigger>
-                      <TabsTrigger 
-                        value="applied" 
-                        onClick={() => setCurrentTab("applied")}
-                        className={currentTab === "applied" ? "bg-primary text-primary-foreground" : ""}
-                      >
-                        Applied ({suggestions.filter(s => s.status === "applied").length})
-                      </TabsTrigger>
-                    </TabsList>
+                    <Tabs defaultValue="all" className="w-full">
+                      <TabsList>
+                        <TabsTrigger 
+                          value="all" 
+                          onClick={() => setCurrentTab("all")}
+                          className={currentTab === "all" ? "bg-primary text-primary-foreground" : ""}
+                        >
+                          All ({suggestions.length})
+                        </TabsTrigger>
+                        <TabsTrigger 
+                          value="pending" 
+                          onClick={() => setCurrentTab("pending")}
+                          className={currentTab === "pending" ? "bg-primary text-primary-foreground" : ""}
+                        >
+                          Pending ({suggestions.filter(s => s.status === "pending").length})
+                        </TabsTrigger>
+                        <TabsTrigger 
+                          value="applied" 
+                          onClick={() => setCurrentTab("applied")}
+                          className={currentTab === "applied" ? "bg-primary text-primary-foreground" : ""}
+                        >
+                          Applied ({suggestions.filter(s => s.status === "applied").length})
+                        </TabsTrigger>
+                      </TabsList>
+                    </Tabs>
 
                     <ScrollArea className="h-[550px] pr-4">
                       {Object.entries(groupedSuggestions()).map(([type, group]) => (

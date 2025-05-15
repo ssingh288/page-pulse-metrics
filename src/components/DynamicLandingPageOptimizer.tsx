@@ -1,9 +1,10 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, Sparkles, RefreshCw, LineChart, LayoutGrid, History, X } from "lucide-react";
+import { Loader2, Sparkles, RefreshCw, LineChart, LayoutGrid, X } from "lucide-react";
 import OptimizationPanel from "./OptimizationPanel";
 import AdPreviewPanel from "./AdPreviewPanel";
 import { 
@@ -13,6 +14,7 @@ import {
   generateAdSuggestions,
   applyOptimizationsToHTML
 } from "@/utils/aiService";
+import { HistoryIcon } from "./HistoryIcon";
 
 interface DynamicLandingPageOptimizerProps {
   htmlContent: string;
@@ -22,6 +24,7 @@ interface DynamicLandingPageOptimizerProps {
     industry: string;
     campaign_type: string;
     keywords: string[];
+    created_at?: string;
   };
   onApplyChanges: (updatedHtml: string) => void;
 }
