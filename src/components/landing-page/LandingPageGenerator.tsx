@@ -1,4 +1,3 @@
-
 import { generateLandingPageContent, generateEnhancedHtml, ThemeOption } from "@/utils/landingPageGenerator";
 import { LandingPageFormData } from "@/services/landingPageService";
 import { supabase } from "@/integrations/supabase/client";
@@ -78,12 +77,9 @@ export async function regenerateContent(
             Title: ${formValues.title}
             Target Audience: ${formValues.audience}
             Industry: ${formValues.industry}
-            Campaign Type: ${formValues.campaign_type}
-            Keywords: ${keywordsArray.join(', ')}
-            
-            Generate engaging headlines, persuasive body copy, compelling call-to-actions, 
-            and relevant sections that would convert well for this type of landing page.`,
-          mode: "landing_page_content"
+            Campaign Type: ${formValues.campaign_type}`,
+          mode: "landing_page_content",
+          keywords: keywordsArray
         }
       });
 
@@ -104,7 +100,7 @@ export async function regenerateContent(
           aiData.content
         );
         
-        onSuccess(enhancedHtml, aiData.content);
+        onSuccess(enhancedHtml, aiData);
         return;
       }
     } catch (e) {

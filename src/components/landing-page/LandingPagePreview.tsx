@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ThemeOption } from "@/utils/landingPageGenerator";
-import { FileText, Palette, Sparkles, Save, Loader2 } from "lucide-react";
+import { FileText, Palette, Save, Loader2, PlusCircle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -18,6 +18,8 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { X } from "lucide-react";
 
 interface DesignCategory {
   name: string;
@@ -37,10 +39,12 @@ interface LandingPagePreviewProps {
   isGenerating: boolean;
   onRegenerateContent: () => void;
   onRegenerateTheme: () => void;
-  onToggleOptimizer: () => void;
   onSavePage: () => void;
   showOptimizer: boolean;
   generatedContent: unknown;
+  keywordSuggestions: string[];
+  onAddKeyword: (keyword: string) => void;
+  onRemoveKeyword: (keyword: string) => void;
 }
 
 export function LandingPagePreview({
@@ -48,13 +52,16 @@ export function LandingPagePreview({
   isGenerating,
   onRegenerateContent,
   onRegenerateTheme,
-  onToggleOptimizer,
   onSavePage,
   showOptimizer,
-  generatedContent
+  generatedContent,
+  keywordSuggestions = [],
+  onAddKeyword,
+  onRemoveKeyword
 }: LandingPagePreviewProps) {
   const [openDesignDialog, setOpenDesignDialog] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("modern");
+  const [newKeyword, setNewKeyword] = useState("");
 
   // Design categories with styles
   const designCategories: DesignCategory[] = [
@@ -180,10 +187,17 @@ export function LandingPagePreview({
     }
   ];
 
+  const handleAddKeyword = () => {
+    if (newKeyword.trim()) {
+      onAddKeyword(newKeyword.trim());
+      setNewKeyword("");
+    }
+  };
+
   return (
     <div className="grid grid-cols-12 gap-6">
-      {/* Controls Panel - 7 columns (left side) */}
-      <div className="col-span-7">
+      {/* Controls Panel - 5 columns (left side) - REDUCED WIDTH */}
+      <div className="col-span-4">
         <div className="space-y-6">
           {/* Page Controls Card */}
           <Card className="shadow-sm">
@@ -268,16 +282,6 @@ export function LandingPagePreview({
                 </DialogContent>
               </Dialog>
               
-              <Button
-                variant={showOptimizer ? "secondary" : "outline"}
-                className="w-full justify-start"
-                onClick={onToggleOptimizer}
-                disabled={isGenerating}
-              >
-                <Sparkles className="mr-2 h-4 w-4 text-primary" />
-                {showOptimizer ? "Hide AI Optimizer" : "AI Optimizer"}
-              </Button>
-              
               <Button 
                 className="w-full justify-start"
                 onClick={onSavePage}
@@ -293,32 +297,49 @@ export function LandingPagePreview({
             </CardContent>
           </Card>
           
-          {/* AI-Suggested Keywords Card */}
-          {typeof generatedContent === 'object' && 
-          generatedContent !== null && 
-          'keywordSuggestions' in generatedContent && 
-          Array.isArray(generatedContent.keywordSuggestions) && 
-          generatedContent.keywordSuggestions.length > 0 && (
-            <Card className="shadow-sm">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg">AI-Suggested Keywords</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {(generatedContent.keywordSuggestions as string[]).map((keyword, index) => (
-                    <div key={index} className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
-                      {keyword}
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          {/* Keywords Management Card - NEW */}
+          <Card className="shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Content Keywords</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Add keyword..." 
+                  value={newKeyword}
+                  onChange={(e) => setNewKeyword(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddKeyword()}
+                  className="flex-1"
+                />
+                <Button onClick={handleAddKeyword} size="sm">
+                  <PlusCircle className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              <div className="flex flex-wrap gap-2 mt-3">
+                {keywordSuggestions.map((keyword, index) => (
+                  <div key={index} className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm flex items-center gap-1">
+                    {keyword}
+                    <button 
+                      onClick={() => onRemoveKeyword(keyword)} 
+                      className="ml-1 hover:bg-primary/20 rounded-full p-1"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="text-xs text-muted-foreground mt-1">
+                Adding relevant keywords helps AI generate more targeted content
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
 
-      {/* Preview Panel - 5 columns (right side) */}
-      <div className="col-span-5">
+      {/* Preview Panel - 8 columns (right side) - INCREASED WIDTH */}
+      <div className="col-span-8">
         <Card className="h-full">
           <CardHeader className="bg-muted/20 border-b flex flex-row justify-between items-center py-3 px-4">
             <CardTitle className="text-lg font-semibold text-primary">Preview</CardTitle>

@@ -20,7 +20,7 @@ serve(async (req) => {
       throw new Error('OPENAI_API_KEY is not set');
     }
 
-    const { prompt, mode } = await req.json();
+    const { prompt, mode, keywords = [] } = await req.json();
 
     if (!prompt) {
       throw new Error('No prompt provided');
@@ -30,11 +30,22 @@ serve(async (req) => {
     let systemMessage = 'You are an AI assistant specialized in content generation.';
     
     if (mode === 'landing_page_content') {
-      systemMessage = 'You are an AI assistant specialized in creating high-converting landing page content. You create compelling headlines, persuasive body copy, effective calls to action, and structure content for maximum impact. Your content is optimized for both user experience and conversion.';
+      systemMessage = 'You are an AI assistant specialized in creating high-converting landing page content. You create compelling headlines, persuasive body copy, effective calls to action, and structure content for maximum impact. Your content is optimized for both user experience and conversion. If keywords are provided, make sure to incorporate them naturally throughout the content.';
     } else if (mode === 'page_optimization') {
       systemMessage = 'You are an AI assistant specialized in landing page optimization. You analyze landing pages and provide structured recommendations for improving conversion rates, user engagement, and SEO performance.';
     } else if (mode === 'ad_generation') {
       systemMessage = 'You are an AI assistant specialized in creating platform-specific ad content based on landing pages. You create optimized ad variations for different platforms maintaining brand consistency while leveraging platform-specific best practices.';
+    }
+    
+    // Enhance prompt with keywords if they're provided
+    let enhancedPrompt = prompt;
+    if (keywords && keywords.length > 0) {
+      enhancedPrompt += `\n\nPlease incorporate these keywords naturally in the content: ${keywords.join(', ')}`;
+      
+      // For landing page content, also suggest additional relevant keywords
+      if (mode === 'landing_page_content') {
+        enhancedPrompt += `\n\nAlso, suggest 5-7 additional relevant keywords or phrases that could enhance the content's SEO performance.`;
+      }
     }
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -47,7 +58,7 @@ serve(async (req) => {
         model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: systemMessage },
-          { role: 'user', content: prompt }
+          { role: 'user', content: enhancedPrompt }
         ],
         temperature: 0.7,
         max_tokens: 1500,
@@ -62,11 +73,26 @@ serve(async (req) => {
 
     const content = data.choices?.[0]?.message?.content || "No content available at this time";
 
-    // Try to parse the response based on the mode
+    // Process response based on mode
     if (mode === 'landing_page_content') {
-      // For landing page content, return the generated content
+      // Extract additional keywords if they exist in the response
+      let keywordSuggestions: string[] = [];
+      
+      // Try to extract a keywords section if it exists
+      const keywordsMatch = content.match(/keywords?:?\s*([\s\S]*?)(?:\n\n|$)/i);
+      if (keywordsMatch && keywordsMatch[1]) {
+        // Extract keywords, handling various formats (comma-separated, bullet points)
+        keywordSuggestions = keywordsMatch[1]
+          .split(/[,•\-\n]/) // Split by commas, bullets, or new lines
+          .map((k: string) => k.trim())
+          .filter((k: string) => k.length > 0);
+      }
+      
       return new Response(
-        JSON.stringify({ content }),
+        JSON.stringify({ 
+          content,
+          keywordSuggestions
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     } else if (mode === 'page_optimization' || mode === 'ad_generation') {

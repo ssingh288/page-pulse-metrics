@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { toast } from "sonner";
@@ -59,6 +58,7 @@ const LandingPageCreator = () => {
   const [showOnboarding, setShowOnboarding] = useState(true);
   const { theme, setTheme } = useTheme();
   const [achievements, setAchievements] = useState<string[]>([]);
+  const [keywordSuggestions, setKeywordSuggestions] = useState<string[]>([]);
   const steps = ["Form", "Preview", "Optimize"];
   const currentStep = activeTab === "form" ? 0 : activeTab === "preview" ? 1 : 2;
   
@@ -184,6 +184,15 @@ const LandingPageCreator = () => {
       setGeneratingPage(true);
       setFormValues(values);
 
+      // Process keywords into an array
+      const keywordsArray = values.keywords
+        .split(",")
+        .map(keyword => keyword.trim())
+        .filter(keyword => keyword.length > 0);
+        
+      // Set initial keywords
+      setKeywordSuggestions(keywordsArray);
+
       // Generate landing page content
       generateLandingPageFromValues({
         formValues: values,
@@ -192,6 +201,14 @@ const LandingPageCreator = () => {
           setGeneratedContent(content);
           setThemeOptions(themes);
           setActiveTab("preview");
+          
+          // Extract keywords from generated content if available
+          if (content && typeof content === 'object' && 'keywordSuggestions' in content) {
+            setKeywordSuggestions(
+              [...keywordsArray, ...(content.keywordSuggestions as string[] || [])]
+                .filter((v, i, a) => a.indexOf(v) === i) // Remove duplicates
+            );
+          }
           
           // Auto save the draft with the preview content
           autoSaveDraft(values);
@@ -242,8 +259,14 @@ const LandingPageCreator = () => {
     
     setGeneratingPage(true);
     
+    // Update the form values with the current keywords
+    const updatedFormValues = {
+      ...formValues,
+      keywords: keywordSuggestions.join(', ')
+    };
+    
     regenerateContent(
-      formValues,
+      updatedFormValues,
       selectedThemeIndex,
       themeOptions,
       (html, content) => {
@@ -252,7 +275,7 @@ const LandingPageCreator = () => {
         setGeneratingPage(false);
         
         // Auto save with the new content
-        autoSaveDraft(formValues);
+        autoSaveDraft(updatedFormValues);
       },
       (error) => {
         toast.error(`Error regenerating content: ${error.message}`);
@@ -296,6 +319,16 @@ const LandingPageCreator = () => {
     
     // Auto save with the optimized content
     autoSaveDraft(formValues);
+  };
+
+  const handleAddKeyword = (keyword: string) => {
+    if (!keywordSuggestions.includes(keyword)) {
+      setKeywordSuggestions([...keywordSuggestions, keyword]);
+    }
+  };
+
+  const handleRemoveKeyword = (keyword: string) => {
+    setKeywordSuggestions(keywordSuggestions.filter(k => k !== keyword));
   };
 
   useEffect(() => {
@@ -361,10 +394,9 @@ const LandingPageCreator = () => {
       <Card className="glassmorphic-card shadow-2xl border-0 bg-white/80 backdrop-blur-lg rounded-2xl">
         <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/10 rounded-t-2xl">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid grid-cols-3 w-full mb-4 rounded-xl">
+            <TabsList className="grid grid-cols-2 w-full mb-4 rounded-xl">
               <TabsTrigger value="form" className="text-lg font-semibold transition-colors hover:bg-primary/10">Form</TabsTrigger>
               <TabsTrigger value="preview" className="text-lg font-semibold transition-colors hover:bg-primary/10">Preview</TabsTrigger>
-              <TabsTrigger value="optimizer" className="text-lg font-semibold transition-colors hover:bg-primary/10">AI Optimizer</TabsTrigger>
             </TabsList>
           </Tabs>
         </CardHeader>
@@ -391,31 +423,18 @@ const LandingPageCreator = () => {
                 isGenerating={generatingPage}
                 onRegenerateContent={handleRegenerateContent}
                 onRegenerateTheme={handleRegenerateTheme}
-                onToggleOptimizer={toggleOptimizer}
                 onSavePage={handleSavePage}
                 showOptimizer={showOptimizer}
                 generatedContent={generatedContent}
+                keywordSuggestions={keywordSuggestions}
+                onAddKeyword={handleAddKeyword}
+                onRemoveKeyword={handleRemoveKeyword}
               />
               <div className="flex justify-end mt-4">
                 <Button onClick={handleSavePage} disabled={generatingPage} className="font-bold transition-transform hover:scale-105">
                   Save & Publish
                 </Button>
               </div>
-            </div>
-          )}
-          {activeTab === "optimizer" && (
-            <div className="p-4">
-              <DynamicLandingPageOptimizer
-                htmlContent={previewHtml}
-                pageInfo={{
-                  title: formValues.title,
-                  audience: formValues.audience,
-                  industry: formValues.industry,
-                  campaign_type: formValues.campaign_type,
-                  keywords: formValues.keywords.split(",").map(k => k.trim()),
-                }}
-                onApplyChanges={handleApplyOptimizations}
-              />
             </div>
           )}
         </CardContent>
