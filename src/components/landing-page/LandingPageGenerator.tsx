@@ -1,6 +1,7 @@
 
 import { generateLandingPageContent, generateEnhancedHtml, ThemeOption } from "@/utils/landingPageGenerator";
 import { LandingPageFormData } from "@/services/landingPageService";
+import { supabase } from "@/integrations/supabase/client";
 
 interface GenerateLandingPageProps {
   formValues: LandingPageFormData;
@@ -48,9 +49,9 @@ export function generateLandingPageFromValues({
 }
 
 /**
- * Regenerate content but keep the same theme
+ * Regenerate high-quality content with AI but keep the same theme
  */
-export function regenerateContent(
+export async function regenerateContent(
   formValues: LandingPageFormData,
   currentThemeIndex: number,
   themeOptions: ThemeOption[],
@@ -69,25 +70,70 @@ export function regenerateContent(
       .map(keyword => keyword.trim())
       .filter(keyword => keyword.length > 0);
     
-    // Generate new content
-    const { content } = generateLandingPageContent(
-      formValues.title, 
-      formValues.audience, 
-      formValues.industry, 
-      formValues.campaign_type,
-      keywordsArray
-    );
+    // Try to use Supabase Edge Function if available for AI-powered content generation
+    try {
+      const { data: aiData, error: aiError } = await supabase.functions.invoke('generate-ai-content', {
+        body: { 
+          prompt: `Generate high-quality landing page content for:
+            Title: ${formValues.title}
+            Target Audience: ${formValues.audience}
+            Industry: ${formValues.industry}
+            Campaign Type: ${formValues.campaign_type}
+            Keywords: ${keywordsArray.join(', ')}
+            
+            Generate engaging headlines, persuasive body copy, compelling call-to-actions, 
+            and relevant sections that would convert well for this type of landing page.`,
+          mode: "landing_page_content"
+        }
+      });
+
+      if (aiError) {
+        console.error('AI content generation error:', aiError);
+        // Fall back to standard content generation
+        fallbackContentGeneration();
+        return;
+      }
+
+      if (aiData && aiData.content) {
+        // If AI content was successfully generated
+        const enhancedHtml = generateEnhancedHtml(
+          formValues.title,
+          formValues.audience,
+          keywordsArray,
+          themeOptions[currentThemeIndex],
+          aiData.content
+        );
+        
+        onSuccess(enhancedHtml, aiData.content);
+        return;
+      }
+    } catch (e) {
+      console.error('Error with AI content generation:', e);
+      // Fall back to standard content generation
+      fallbackContentGeneration();
+    }
     
-    // Generate HTML with the same theme but new content
-    const enhancedHtml = generateEnhancedHtml(
-      formValues.title,
-      formValues.audience,
-      keywordsArray,
-      themeOptions[currentThemeIndex],
-      content
-    );
-    
-    onSuccess(enhancedHtml, content);
+    function fallbackContentGeneration() {
+      // Generate new content using the standard method
+      const { content } = generateLandingPageContent(
+        formValues.title, 
+        formValues.audience, 
+        formValues.industry, 
+        formValues.campaign_type,
+        keywordsArray
+      );
+      
+      // Generate HTML with the same theme but new content
+      const enhancedHtml = generateEnhancedHtml(
+        formValues.title,
+        formValues.audience,
+        keywordsArray,
+        themeOptions[currentThemeIndex],
+        content
+      );
+      
+      onSuccess(enhancedHtml, content);
+    }
   } catch (error) {
     onError(error instanceof Error ? error : new Error('Failed to regenerate content'));
   }
