@@ -183,6 +183,36 @@ export type Database = {
           },
         ]
       }
+      optimization_history: {
+        Row: {
+          created_at: string
+          id: string
+          optimization_type: string
+          optimized_content: string
+          original_content: string
+          page_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          optimization_type: string
+          optimized_content: string
+          original_content: string
+          page_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          optimization_type?: string
+          optimized_content?: string
+          original_content?: string
+          page_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       page_metrics: {
         Row: {
           avg_time: number

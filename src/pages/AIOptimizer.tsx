@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -31,6 +30,7 @@ import {
   Undo2,
   Upload
 } from "lucide-react";
+import HistoryIconComponent from "@/components/HistoryIcon";
 import {
   Card,
   CardContent,
@@ -72,6 +72,7 @@ interface PageInfo {
   industry: string; 
   campaign_type: string;
   initial_keywords: string[];
+  created_at?: string; // Make this optional since it might not exist in some places
 }
 
 interface AISuggestion {
@@ -124,7 +125,7 @@ const AIOptimizer = () => {
         // Fetch page info with additional fields for AI optimizer
         const { data: pageData, error: pageError } = await supabase
           .from('landing_pages')
-          .select('id, title, html_content, audience, industry, campaign_type, initial_keywords')
+          .select('id, title, html_content, audience, industry, campaign_type, initial_keywords, created_at')
           .eq('id', id)
           .eq('user_id', user.id)
           .single();
@@ -666,7 +667,7 @@ const AIOptimizer = () => {
   }
 
   return (
-    <Layout title={`AI Optimizer: ${page.title}`}>
+    <Layout title={`AI Optimizer: ${page?.title || ''}`}>
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <div className="flex items-center gap-4">
           <Avatar className="ring-2 ring-primary/30 shadow-lg">
@@ -786,7 +787,7 @@ const AIOptimizer = () => {
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
                       <h3 className="text-lg font-semibold flex items-center gap-2">
-                        <History className="h-5 w-5 text-primary" /> Version History
+                        <HistoryIconComponent className="h-5 w-5 text-primary" /> Version History
                       </h3>
                       <Button variant="ghost" size="sm" onClick={() => setShowVersionHistory(false)}>
                         <X className="h-4 w-4" />
@@ -832,7 +833,7 @@ const AIOptimizer = () => {
                           className="ml-auto mr-2"
                           onClick={() => setShowVersionHistory(true)}
                         >
-                          <History className="h-4 w-4 mr-1" /> History
+                          <HistoryIconComponent className="h-4 w-4 mr-1" /> History
                         </Button>
                         <Button 
                           variant="default" 
@@ -969,7 +970,7 @@ const AIOptimizer = () => {
           {activeTab === "ad-generation" && (
             <div className="p-4">
               {adSuggestions ? (
-                <AdPreviewPanel adSuggestions={adSuggestions} />
+                <AdPreviewPanel adSuggestions={adSuggestions} isLoading={isLoadingAds} />
               ) : (
                 <div className="text-center py-24 border-2 border-dashed rounded-lg">
                   <MessageSquare className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
