@@ -146,21 +146,21 @@ export const generateMockSuggestions = (
         relevance: "high",
         trafficPotential: "15,000/month",
         difficulty: "35",
-        suggested_placement: "Title, H1, Meta Description"
+        // Remove the suggested_placement property as it's not in the interface
       },
       {
         keyword: `${industry} for ${audience}`,
         relevance: "high",
         trafficPotential: "8,200/month",
         difficulty: "42",
-        suggested_placement: "H2, Body Content"
+        // Remove the suggested_placement property as it's not in the interface
       },
       {
         keyword: "increase efficiency",
         relevance: "medium",
         trafficPotential: "5,400/month",
         difficulty: "28",
-        suggested_placement: "Body Content, Alt Text"
+        // Remove the suggested_placement property as it's not in the interface
       }
     ],
     structure: [
