@@ -79,7 +79,7 @@ const AdPreviewPanel: React.FC<AdPreviewPanelProps> = ({
               <div>
                 <h4 className="text-sm font-medium mb-2">Headline:</h4>
                 <div className="bg-muted p-3 rounded-md">
-                  {adSuggestions.facebook?.headline}
+                  {adSuggestions.facebook?.headline || "No headline available"}
                 </div>
                 <Button 
                   variant="ghost" 
@@ -95,7 +95,7 @@ const AdPreviewPanel: React.FC<AdPreviewPanelProps> = ({
               <div>
                 <h4 className="text-sm font-medium mb-2">Primary Text:</h4>
                 <div className="bg-muted p-3 rounded-md whitespace-pre-wrap">
-                  {adSuggestions.facebook?.primary_text}
+                  {adSuggestions.facebook?.primary_text || "No primary text available"}
                 </div>
                 <Button 
                   variant="ghost" 
@@ -111,7 +111,7 @@ const AdPreviewPanel: React.FC<AdPreviewPanelProps> = ({
               <div>
                 <h4 className="text-sm font-medium mb-2">Description:</h4>
                 <div className="bg-muted p-3 rounded-md">
-                  {adSuggestions.facebook?.description}
+                  {adSuggestions.facebook?.description || "No description available"}
                 </div>
                 <Button 
                   variant="ghost" 
@@ -150,7 +150,7 @@ const AdPreviewPanel: React.FC<AdPreviewPanelProps> = ({
               <div>
                 <h4 className="text-sm font-medium mb-2">Caption:</h4>
                 <div className="bg-muted p-3 rounded-md whitespace-pre-wrap">
-                  {adSuggestions.instagram?.caption}
+                  {adSuggestions.instagram?.caption || "No caption available"}
                 </div>
                 <Button 
                   variant="ghost" 
@@ -166,7 +166,7 @@ const AdPreviewPanel: React.FC<AdPreviewPanelProps> = ({
               <div>
                 <h4 className="text-sm font-medium mb-2">Hashtags:</h4>
                 <div className="bg-muted p-3 rounded-md">
-                  {adSuggestions.instagram?.hashtags}
+                  {adSuggestions.instagram?.hashtags || "No hashtags available"}
                 </div>
                 <Button 
                   variant="ghost" 
@@ -205,7 +205,7 @@ const AdPreviewPanel: React.FC<AdPreviewPanelProps> = ({
               <div>
                 <h4 className="text-sm font-medium mb-2">Tweet Copy:</h4>
                 <div className="bg-muted p-3 rounded-md whitespace-pre-wrap">
-                  {adSuggestions.twitter?.tweet_copy}
+                  {adSuggestions.twitter?.tweet_copy || "No tweet copy available"}
                 </div>
                 <Button 
                   variant="ghost" 
@@ -221,7 +221,7 @@ const AdPreviewPanel: React.FC<AdPreviewPanelProps> = ({
               <div>
                 <h4 className="text-sm font-medium mb-2">Hashtags:</h4>
                 <div className="bg-muted p-3 rounded-md">
-                  {adSuggestions.twitter?.hashtags}
+                  {adSuggestions.twitter?.hashtags || "No hashtags available"}
                 </div>
                 <Button 
                   variant="ghost" 

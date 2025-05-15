@@ -22,8 +22,8 @@ export interface PageOptimizationSuggestion {
   keywords?: Array<{
     keyword: string;
     relevance: "high" | "medium" | "low";
-    trafficPotential: number;
-    difficulty: number;
+    trafficPotential: string; // Changed from number to string to match usage
+    difficulty: string; // Changed from number to string to match usage
   }>;
   structure?: Array<{
     suggestion: string;
@@ -38,36 +38,35 @@ export interface PageOptimizationSuggestion {
 }
 
 export interface AdSuggestion {
-  facebook?: Array<{
+  facebook?: {
     headline: string;
+    primary_text: string;
     description: string;
     cta: string;
-    imagePrompt: string;
-  }>;
-  instagram?: Array<{
+    status?: string;
+  };
+  instagram?: {
     caption: string;
-    cta: string;
-    imagePrompt: string;
-  }>;
-  linkedin?: Array<{
+    hashtags: string;
+    status?: string;
+  };
+  twitter?: {
+    tweet_copy: string;
+    hashtags: string;
+    status?: string;
+  };
+  linkedin?: {
     headline: string;
     description: string;
     cta: string;
-    imagePrompt: string;
-  }>;
-  twitter?: Array<{
-    text: string;
-    cta: string;
-    imagePrompt: string;
-  }>;
-  google?: Array<{
+  };
+  google?: {
     headline1: string;
     headline2: string;
     headline3: string;
     description1: string;
     description2: string;
-    imagePrompt: string;
-  }>;
+  };
 }
 
 /**
@@ -180,9 +179,9 @@ export const generatePageOptimizations = async (
         }
       ],
       keywords: [
-        { keyword: "conversion rate optimization", relevance: "high", trafficPotential: 85, difficulty: 43 },
-        { keyword: "landing page optimization", relevance: "high", trafficPotential: 72, difficulty: 38 },
-        { keyword: "improve website conversions", relevance: "medium", trafficPotential: 65, difficulty: 30 }
+        { keyword: "conversion rate optimization", relevance: "high", trafficPotential: "85", difficulty: "43" },
+        { keyword: "landing page optimization", relevance: "high", trafficPotential: "72", difficulty: "38" },
+        { keyword: "improve website conversions", relevance: "medium", trafficPotential: "65", difficulty: "30" }
       ],
       structure: [
         { suggestion: "Move testimonials above the fold", reason: "Social proof early in the user journey increases trust" },
@@ -239,46 +238,34 @@ export const generateAdSuggestions = async (
     
     // Return fallback sample data
     return {
-      facebook: [
-        {
-          headline: "Double Your Conversions in 30 Days",
-          description: "Our proven strategy has helped 10,000+ businesses increase their conversion rates. Try it free for 14 days!",
-          cta: "Start Free Trial",
-          imagePrompt: "Professional showing increased conversion metrics on a dashboard with a clear upward trend"
-        }
-      ],
-      instagram: [
-        {
-          caption: "Transform your business results with our conversion optimization platform! 📈 #ConversionRate #MarketingTips #GrowthHacking",
-          cta: "Learn More",
-          imagePrompt: "Stylish, minimal design showing before/after conversion metrics with vibrant colors"
-        }
-      ],
-      linkedin: [
-        {
-          headline: "Increase Your ROI with Data-Driven Conversion Optimization",
-          description: "Join industry leaders who've seen an average 250% increase in conversion rates using our enterprise platform.",
-          cta: "Request Demo",
-          imagePrompt: "Professional business setting with analytics dashboard showing improved metrics"
-        }
-      ],
-      twitter: [
-        {
-          text: "Stop guessing what works. Our platform increased conversion rates by an average of 250% for 10,000+ businesses. See how:",
-          cta: "Learn More",
-          imagePrompt: "Simple chart showing dramatic conversion improvement with brand colors"
-        }
-      ],
-      google: [
-        {
-          headline1: "Boost Conversion Rates 250%",
-          headline2: "Data-Driven Optimization",
-          headline3: "Start Free 14-Day Trial",
-          description1: "Join 10,000+ businesses using our proven platform to increase their website conversions.",
-          description2: "No credit card required. See results in your first week or your money back.",
-          imagePrompt: "Clean, professional banner showing conversion improvement metrics"
-        }
-      ]
+      facebook: {
+        headline: "Double Your Conversions in 30 Days",
+        primary_text: "Our proven strategy has helped 10,000+ businesses increase their conversion rates. Try it free for 14 days!",
+        description: "Our proven strategy has helped 10,000+ businesses increase their conversion rates. Try it free for 14 days!",
+        cta: "Start Free Trial",
+      },
+      instagram: {
+        caption: "Transform your business results with our conversion optimization platform! 📈 #ConversionRate #MarketingTips #GrowthHacking",
+        hashtags: "#ConversionRate #MarketingTips #GrowthHacking",
+        status: "approved"
+      },
+      twitter: {
+        tweet_copy: "Stop guessing what works. Our platform increased conversion rates by an average of 250% for 10,000+ businesses. See how:",
+        hashtags: "#ConversionRate #MarketingTips",
+        status: "approved"
+      },
+      linkedin: {
+        headline: "Increase Your ROI with Data-Driven Conversion Optimization",
+        description: "Join industry leaders who've seen an average 250% increase in conversion rates using our enterprise platform.",
+        cta: "Request Demo",
+      },
+      google: {
+        headline1: "Boost Conversion Rates 250%",
+        headline2: "Data-Driven Optimization",
+        headline3: "Start Free 14-Day Trial",
+        description1: "Join 10,000+ businesses using our proven platform to increase their website conversions.",
+        description2: "No credit card required. See results in your first week or your money back.",
+      }
     };
   }
 };
