@@ -175,6 +175,16 @@ const LandingPageEditor = () => {
     console.log('htmlContent:', htmlContent);
   }, [editor, htmlContent]);
 
+  // Function to open preview in a new tab
+  const openPreviewInNewTab = () => {
+    const previewWindow = window.open('', '_blank');
+    if (previewWindow) {
+      previewWindow.document.write(htmlContent);
+      previewWindow.document.title = 'Landing Page Preview';
+      previewWindow.document.close();
+    }
+  };
+
   if (loading) {
     return (
       <Layout title="Editor">
@@ -236,7 +246,16 @@ const LandingPageEditor = () => {
                     This is how your page will look when published.
                   </DialogDescription>
                 </DialogHeader>
-                <div className="border rounded-md mt-4">
+                <div className="flex justify-end mb-2">
+                  <span 
+                    className="text-xs text-muted-foreground px-2 py-1 bg-primary/5 rounded-full flex items-center gap-1 cursor-pointer hover:bg-primary/10 transition-colors"
+                    onClick={openPreviewInNewTab}
+                  >
+                    Open in new tab
+                    <ExternalLink className="h-3 w-3 ml-1" />
+                  </span>
+                </div>
+                <div className="border rounded-md">
                   <iframe
                     title="Preview"
                     srcDoc={htmlContent}

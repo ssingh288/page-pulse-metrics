@@ -1,9 +1,8 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ThemeOption } from "@/utils/landingPageGenerator";
-import { FileText, Palette, Save, Loader2, PlusCircle } from "lucide-react";
+import { FileText, Palette, Save, Loader2, PlusCircle, ExternalLink } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -62,7 +61,7 @@ export function LandingPagePreview({
   const [openDesignDialog, setOpenDesignDialog] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("modern");
   const [newKeyword, setNewKeyword] = useState("");
-
+  
   // Design categories with styles
   const designCategories: DesignCategory[] = [
     {
@@ -194,6 +193,16 @@ export function LandingPagePreview({
     }
   };
 
+  // Function to open preview in a new tab
+  const openPreviewInNewTab = () => {
+    const previewWindow = window.open('', '_blank');
+    if (previewWindow) {
+      previewWindow.document.write(previewHtml);
+      previewWindow.document.title = 'Landing Page Preview';
+      previewWindow.document.close();
+    }
+  };
+
   return (
     <div className="grid grid-cols-12 gap-6">
       {/* Controls Panel - 5 columns (left side) - REDUCED WIDTH */}
@@ -297,7 +306,7 @@ export function LandingPagePreview({
             </CardContent>
           </Card>
           
-          {/* Keywords Management Card - NEW */}
+          {/* Keywords Management Card */}
           <Card className="shadow-sm">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg">Content Keywords</CardTitle>
@@ -343,7 +352,13 @@ export function LandingPagePreview({
         <Card className="h-full">
           <CardHeader className="bg-muted/20 border-b flex flex-row justify-between items-center py-3 px-4">
             <CardTitle className="text-lg font-semibold text-primary">Preview</CardTitle>
-            <span className="text-xs text-muted-foreground px-2 py-1 bg-primary/5 rounded-full">Live Preview</span>
+            <span 
+              className="text-xs text-muted-foreground px-2 py-1 bg-primary/5 rounded-full flex items-center gap-1 cursor-pointer hover:bg-primary/10 transition-colors"
+              onClick={openPreviewInNewTab}
+            >
+              Live Preview
+              <ExternalLink className="h-3 w-3 ml-1" />
+            </span>
           </CardHeader>
           <CardContent className="p-0 h-[600px] overflow-hidden bg-white">
             <iframe
