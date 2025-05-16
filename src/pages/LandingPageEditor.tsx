@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -56,6 +57,15 @@ const LandingPageEditor = () => {
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [showOptimizer, setShowOptimizer] = useState(false);
+  
+  // Add state for AI optimization
+  const [optimizerData, setOptimizerData] = useState({
+    title: "",
+    audience: "",
+    industry: "",
+    campaign_type: "",
+    keywords: [] as string[],
+  });
 
   useEffect(() => {
     const fetchPage = async () => {
@@ -87,6 +97,19 @@ const LandingPageEditor = () => {
 
     fetchPage();
   }, [id, user, navigate]);
+
+  useEffect(() => {
+    // Set up optimizer data from page
+    if (page) {
+      setOptimizerData({
+        title: page.title,
+        audience: "General",
+        industry: "Technology",
+        campaign_type: "Lead Generation",
+        keywords: [],
+      });
+    }
+  }, [page]);
 
   const handleSave = async () => {
     try {
@@ -185,6 +208,18 @@ const LandingPageEditor = () => {
     }
   };
 
+  // Function to handle AI optimizations
+  const handleAIOptimize = () => {
+    setShowOptimizer(true);
+  };
+
+  // Function to apply optimizations
+  const handleApplyOptimizations = (updatedHtml: string) => {
+    setHtmlContent(updatedHtml);
+    setShowOptimizer(false);
+    toast.success("AI optimizations applied successfully!");
+  };
+
   if (loading) {
     return (
       <Layout title="Editor">
@@ -228,7 +263,8 @@ const LandingPageEditor = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigate(`/pages/${id}/ai-optimize`)}
+              onClick={handleAIOptimize}
+              id="radix-:r0:-trigger-optimize"
             >
               <Sparkles className="mr-2 h-4 w-4" /> AI Optimize
             </Button>
@@ -339,20 +375,17 @@ const LandingPageEditor = () => {
         </Tabs>
         {showOptimizer && (
           <Dialog open={showOptimizer} onOpenChange={setShowOptimizer}>
-            <DialogContent className="max-w-3xl">
+            <DialogContent className="max-w-7xl max-h-[90vh]">
               <DynamicLandingPageOptimizer
                 htmlContent={htmlContent}
                 pageInfo={{
-                  title: page.title,
-                  audience: '',
-                  industry: '',
-                  campaign_type: '',
-                  keywords: [],
+                  title: optimizerData.title,
+                  audience: optimizerData.audience,
+                  industry: optimizerData.industry,
+                  campaign_type: optimizerData.campaign_type,
+                  keywords: optimizerData.keywords,
                 }}
-                onApplyChanges={(updatedHtml) => {
-                  setHtmlContent(updatedHtml);
-                  setShowOptimizer(false);
-                }}
+                onApplyChanges={handleApplyOptimizations}
               />
             </DialogContent>
           </Dialog>

@@ -347,6 +347,20 @@ const DynamicLandingPageOptimizer: React.FC<DynamicLandingPageOptimizerProps> = 
     );
   };
 
+  // Function to open preview in a new tab
+  const openPreviewInNewTab = () => {
+    const previewWindow = window.open('', '_blank');
+    if (previewWindow) {
+      previewWindow.document.write(
+        optimizationSuggestions ? 
+        applyOptimizationsToHTML(htmlContent, optimizationSuggestions) : 
+        htmlContent
+      );
+      previewWindow.document.title = 'Optimized Preview';
+      previewWindow.document.close();
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       {/* Sticky Header */}
@@ -397,7 +411,16 @@ const DynamicLandingPageOptimizer: React.FC<DynamicLandingPageOptimizerProps> = 
         {/* Right: Live Mobile Preview */}
         <div className="hidden md:flex w-2/3 h-full bg-muted/10 p-8 items-center justify-center overflow-y-auto">
           <div className="w-[375px] h-[700px] bg-white rounded-2xl shadow-2xl border flex flex-col overflow-hidden">
-            <div className="font-semibold text-center py-2 bg-muted/20 border-b">Mobile Preview</div>
+            <div className="font-semibold text-center py-2 bg-muted/20 border-b flex justify-between items-center px-4">
+              <div>Mobile Preview</div>
+              <div 
+                className="text-xs text-muted-foreground flex items-center gap-1 cursor-pointer hover:text-primary"
+                onClick={openPreviewInNewTab}
+              >
+                Live Preview
+                <ChevronRight className="h-3 w-3" />
+              </div>
+            </div>
             <iframe
               title="Landing Page Preview"
               srcDoc={optimizationSuggestions ? applyOptimizationsToHTML(htmlContent, optimizationSuggestions) : htmlContent}
