@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -12,7 +13,8 @@ import {
   PlusCircle,
   User,
   LogOut,
-  Sparkles
+  Sparkles,
+  Lightbulb
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
@@ -80,6 +82,12 @@ export function AppSidebar() {
           label="Media Library"
           href="/media"
           active={isActive("/media")}
+        />
+        <NavItem
+          icon={Lightbulb}
+          label="AI Insights"
+          href="/pages/ai-insights"
+          active={isActive("/pages/ai-insights")}
         />
       </div>
       

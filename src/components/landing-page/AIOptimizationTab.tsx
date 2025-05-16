@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { getImmediateOptimization } from "@/utils/optimizationUtils";
 import { LandingPageFormValues } from "./LandingPageForm";
+import { Link } from "react-router-dom";
 
 interface AIOptimizationTabProps {
   formValues: LandingPageFormValues;
@@ -231,10 +232,12 @@ export const AIOptimizationTab: React.FC<AIOptimizationTabProps> = ({
           {/* Optimization Insights */}
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Lightbulb className="h-5 w-5 text-primary" />
-                Optimization Insights
-              </CardTitle>
+              <Link to="/pages/ai-insights">
+                <CardTitle className="text-lg flex items-center gap-2 cursor-pointer hover:text-primary hover:underline transition-colors">
+                  <Lightbulb className="h-5 w-5 text-primary" />
+                  Optimization Insights
+                </CardTitle>
+              </Link>
             </CardHeader>
             <CardContent>
               <ul className="space-y-2">
