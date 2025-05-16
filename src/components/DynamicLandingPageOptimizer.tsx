@@ -4,15 +4,22 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, Sparkles, RefreshCw, LineChart, LayoutGrid, X, TrendingUp, Search, CheckCircle, ChevronRight } from "lucide-react";
+import { Loader2, Sparkles, RefreshCw, LineChart, LayoutGrid, X, TrendingUp, Search, CheckCircle, ChevronRight, PaintBrush, FileText, Edit } from "lucide-react";
 import OptimizationPanel from "./OptimizationPanel";
 import AdPreviewPanel from "./AdPreviewPanel";
 import { 
   PageOptimizationSuggestion, 
   AdSuggestion,
+  ContentSynthesis,
+  DesignOption,
+  DesignOptions,
   generatePageOptimizations,
   generateAdSuggestions,
-  applyOptimizationsToHTML
+  generateDesignOptions,
+  synthesizeContentSuggestions,
+  applyOptimizationsToHTML,
+  applySynthesizedContentToHTML,
+  applyDesignToHTML
 } from "@/utils/aiService";
 import { HistoryIcon } from "./HistoryIcon";
 import { Badge } from "./ui/badge";
@@ -68,12 +75,26 @@ const DynamicLandingPageOptimizer: React.FC<DynamicLandingPageOptimizerProps> = 
   const [conciseSuggestions, setConciseSuggestions] = useState<OptimizationSuggestion[]>([]);
   const [selectedConciseSuggestionIndex, setSelectedConciseSuggestionIndex] = useState<number>(0);
   
+  // Content synthesis
+  const [synthesizedContent, setSynthesizedContent] = useState<ContentSynthesis | null>(null);
+  const [isSynthesizingContent, setIsSynthesizingContent] = useState(false);
+  
+  // Design options
+  const [designOptions, setDesignOptions] = useState<DesignOptions | null>(null);
+  const [selectedDesignIndex, setSelectedDesignIndex] = useState<number>(0);
+  const [isGeneratingDesigns, setIsGeneratingDesigns] = useState(false);
+  
+  // Preview state
+  const [previewHtml, setPreviewHtml] = useState<string>(htmlContent);
+  
   // Automatically generate optimizations when component mounts
   useEffect(() => {
     // Only auto-generate if we don't already have optimizations
     if (!optimizationSuggestions && !isLoadingOptimizations) {
       handleGenerateOptimizations();
     }
+    // Initialize preview HTML
+    setPreviewHtml(htmlContent);
   }, []);
 
   const handleGenerateOptimizations = async () => {
@@ -192,15 +213,97 @@ const DynamicLandingPageOptimizer: React.FC<DynamicLandingPageOptimizerProps> = 
     }
   };
   
+  const handleSynthesizeContent = async () => {
+    try {
+      setIsSynthesizingContent(true);
+      
+      // Only proceed if we have optimization suggestions
+      if (!allOptimizationSuggestions || allOptimizationSuggestions.length === 0) {
+        throw new Error("No optimization suggestions to synthesize");
+      }
+      
+      // Synthesize content from all suggestions
+      const synthesis = await synthesizeContentSuggestions(htmlContent, allOptimizationSuggestions, pageInfo);
+      setSynthesizedContent(synthesis);
+      
+      // Update the preview HTML with synthesized content
+      const updatedHtml = applySynthesizedContentToHTML(htmlContent, synthesis);
+      setPreviewHtml(updatedHtml);
+      
+      toast.success("Created optimized content synthesis!");
+    } catch (error) {
+      console.error("Error synthesizing content:", error);
+      toast.error("Failed to synthesize content");
+    } finally {
+      setIsSynthesizingContent(false);
+    }
+  };
+  
+  const handleGenerateDesignOptions = async () => {
+    try {
+      setIsGeneratingDesigns(true);
+      
+      // Generate design options
+      const designs = await generateDesignOptions(htmlContent, pageInfo);
+      setDesignOptions(designs);
+      setSelectedDesignIndex(0);
+      
+      // Update preview HTML with first design option
+      if (designs.options && designs.options.length > 0) {
+        const updatedHtml = applyDesignToHTML(htmlContent, designs.options[0]);
+        setPreviewHtml(updatedHtml);
+      }
+      
+      toast.success("Generated design options!");
+    } catch (error) {
+      console.error("Error generating design options:", error);
+      toast.error("Failed to generate design options");
+    } finally {
+      setIsGeneratingDesigns(false);
+    }
+  };
+  
+  const handleSelectDesign = (index: number) => {
+    setSelectedDesignIndex(index);
+    
+    // Update preview HTML with selected design
+    if (designOptions && designOptions.options && designOptions.options[index]) {
+      const updatedHtml = applyDesignToHTML(htmlContent, designOptions.options[index]);
+      setPreviewHtml(updatedHtml);
+    }
+  };
+  
   const handleApplySuggestion = (updatedHtml: string) => {
     onApplyChanges(updatedHtml);
     toast.success("Applied changes to landing page!");
+  };
+  
+  const handleApplySynthesizedContent = () => {
+    if (!synthesizedContent) return;
+    
+    const updatedHtml = applySynthesizedContentToHTML(htmlContent, synthesizedContent);
+    onApplyChanges(updatedHtml);
+    toast.success("Applied synthesized content to landing page!");
+  };
+  
+  const handleApplyDesign = () => {
+    if (!designOptions || !designOptions.options || !designOptions.options[selectedDesignIndex]) return;
+    
+    const updatedHtml = applyDesignToHTML(htmlContent, designOptions.options[selectedDesignIndex]);
+    onApplyChanges(updatedHtml);
+    toast.success(`Applied "${designOptions.options[selectedDesignIndex].name}" design to landing page!`);
   };
   
   const handleSelectSuggestion = (index: number) => {
     setSelectedSuggestionIndex(index);
     setOptimizationSuggestions(allOptimizationSuggestions[index]);
     setSelectedConciseSuggestionIndex(index);
+    
+    // Update preview HTML with selected suggestion
+    if (allOptimizationSuggestions && allOptimizationSuggestions[index]) {
+      const updatedHtml = applyOptimizationsToHTML(htmlContent, allOptimizationSuggestions[index]);
+      setPreviewHtml(updatedHtml);
+    }
   };
   
   const handleSelectFromHistory = (index: number) => {
@@ -212,150 +315,11 @@ const DynamicLandingPageOptimizer: React.FC<DynamicLandingPageOptimizerProps> = 
     setAdSuggestions(adSuggestionHistory[index]);
   };
   
-  // Render keywords with traffic likelihood
-  const renderKeywordsWithTraffic = () => {
-    if (!optimizationSuggestions?.keywords?.length) return null;
-    
-    return (
-      <div className="space-y-3 mt-4">
-        <h3 className="text-md font-semibold flex items-center">
-          <Search className="h-4 w-4 mr-2" />
-          Keyword Traffic Analysis
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-          {optimizationSuggestions.keywords.map((keyword, idx) => (
-            <div key={idx} className="flex flex-col p-2 border rounded-md bg-muted/30 hover:bg-muted/50 transition-colors">
-              <div className="flex justify-between items-center">
-                <span className="font-medium">{keyword.keyword}</span>
-                <Badge 
-                  variant={
-                    keyword.relevance === "high" ? "default" :
-                    keyword.relevance === "medium" ? "secondary" : "outline"
-                  }
-                >
-                  {keyword.relevance}
-                </Badge>
-              </div>
-              <div className="flex items-center mt-1 text-xs text-muted-foreground">
-                <TrendingUp className="h-3 w-3 mr-1" />
-                <span>Traffic potential: {keyword.trafficPotential}</span>
-              </div>
-              <div className="mt-1">
-                <Progress 
-                  value={parseInt(keyword.trafficPotential) || 50} 
-                  max={100} 
-                  className="h-1"
-                />
-              </div>
-              <div className="flex justify-between text-xs mt-1">
-                <span>Difficulty: {keyword.difficulty}</span>
-                <span className="text-primary">Recommended</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  // Render concise suggestions
-  const renderConciseSuggestions = () => {
-    return (
-      <div className="space-y-4 mt-4">
-        <h3 className="text-lg font-semibold mb-2">Optimization Strategies</h3>
-        <div className="grid grid-cols-1 gap-4">
-          {conciseSuggestions.map((suggestion, idx) => (
-            <Card 
-              key={idx} 
-              className={`cursor-pointer transition-all hover:shadow-md ${
-                selectedConciseSuggestionIndex === idx ? 'ring-2 ring-primary' : ''
-              }`}
-              onClick={() => handleSelectSuggestion(idx)}
-            >
-              <CardHeader className="pb-2">
-                <div className="flex justify-between items-center">
-                  <CardTitle className="text-lg">{suggestion.title}</CardTitle>
-                  <Badge variant="default" className="text-xs">
-                    {suggestion.trafficPotential}% Traffic
-                  </Badge>
-                </div>
-                <CardDescription>{suggestion.description}</CardDescription>
-              </CardHeader>
-              
-              <CardContent className="pb-2">
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-sm font-medium mb-1">Top Keywords</p>
-                    <div className="flex flex-wrap gap-1">
-                      {suggestion.keywords.slice(0, 4).map((keyword, kidx) => (
-                        <Badge key={kidx} variant="outline" className="text-xs">
-                          {keyword}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <Progress
-                    value={suggestion.trafficPotential}
-                    className="h-2"
-                  />
-                  
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div>
-                      <p className="font-medium text-xs mb-1">Content Changes</p>
-                      <ul className="text-xs text-muted-foreground space-y-1">
-                        {suggestion.changes.content.slice(0, 3).map((change, cidx) => (
-                          <li key={cidx} className="flex items-start">
-                            <ChevronRight className="h-3 w-3 mr-1 flex-shrink-0 mt-0.5" />
-                            <span>{change}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                    <div>
-                      <p className="font-medium text-xs mb-1">Design Changes</p>
-                      <ul className="text-xs text-muted-foreground space-y-1">
-                        {suggestion.changes.design.slice(0, 3).map((change, didx) => (
-                          <li key={didx} className="flex items-start">
-                            <ChevronRight className="h-3 w-3 mr-1 flex-shrink-0 mt-0.5" />
-                            <span>{change}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-              
-              <CardFooter className="pt-0">
-                <Button 
-                  variant={selectedConciseSuggestionIndex === idx ? "default" : "outline"} 
-                  size="sm" 
-                  className="w-full"
-                >
-                  {selectedConciseSuggestionIndex === idx ? (
-                    <>
-                      <CheckCircle className="h-4 w-4 mr-2" /> Selected
-                    </>
-                  ) : "Select Strategy"}
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
   // Function to open preview in a new tab
   const openPreviewInNewTab = () => {
     const previewWindow = window.open('', '_blank');
     if (previewWindow) {
-      previewWindow.document.write(
-        optimizationSuggestions ? 
-        applyOptimizationsToHTML(htmlContent, optimizationSuggestions) : 
-        htmlContent
-      );
+      previewWindow.document.write(previewHtml);
       previewWindow.document.title = 'Optimized Preview';
       previewWindow.document.close();
     }
@@ -371,43 +335,331 @@ const DynamicLandingPageOptimizer: React.FC<DynamicLandingPageOptimizerProps> = 
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => onApplyChanges(htmlContent)}>Cancel</Button>
-          <Button onClick={() => onApplyChanges(optimizationSuggestions ? applyOptimizationsToHTML(htmlContent, optimizationSuggestions) : htmlContent)} disabled={!optimizationSuggestions}>Apply Changes</Button>
-          <Button variant="outline" onClick={handleGenerateOptimizations} disabled={isLoadingOptimizations}>
-            {isLoadingOptimizations ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
-            Regenerate
-          </Button>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="mx-4">
+            <TabsList>
+              <TabsTrigger value="page-optimization" className="flex items-center gap-1">
+                <FileText className="h-4 w-4" /> Content
+              </TabsTrigger>
+              <TabsTrigger value="design-options" className="flex items-center gap-1">
+                <PaintBrush className="h-4 w-4" /> Design
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <Button onClick={() => onApplyChanges(previewHtml)}>Apply Changes</Button>
         </div>
       </header>
+      
       <div className="flex flex-1 overflow-hidden">
         {/* Left: Suggestions and Controls */}
         <div className="w-full md:w-1/3 flex flex-col h-full overflow-y-auto p-6 gap-6">
-          {/* Generate Suggestions Button */}
-          <Button
-            variant="default"
-            onClick={handleGenerateOptimizations}
-            disabled={isLoadingOptimizations}
-            className="mb-4"
-          >
-            {isLoadingOptimizations ? "Analyzing Page..." : "Generate Optimization Suggestions"}
-          </Button>
-          
-          {/* Display concise suggestions */}
-          {isLoadingOptimizations ? (
-            <div className="text-center py-6">
-              <Loader2 className="h-8 w-8 mx-auto animate-spin text-primary mb-2" />
-              <p>Generating optimization strategies...</p>
+          <TabsContent value="page-optimization" className="mt-0 space-y-4">
+            <div className="flex justify-between items-center">
+              <h2 className="text-lg font-semibold">Content Optimization</h2>
+              <Button
+                variant="outline"
+                onClick={handleGenerateOptimizations}
+                disabled={isLoadingOptimizations}
+                size="sm"
+              >
+                {isLoadingOptimizations ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" /> 
+                ) : (
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                )}
+                Regenerate
+              </Button>
             </div>
-          ) : conciseSuggestions.length > 0 ? (
-            renderConciseSuggestions()
-          ) : (
-            <div className="text-center py-6 border rounded-md bg-muted/20">
-              <p className="text-muted-foreground">Click the button above to generate optimization strategies</p>
-            </div>
-          )}
+            
+            {/* Generate synthesis button */}
+            <Button
+              variant="default"
+              onClick={handleSynthesizeContent}
+              disabled={isSynthesizingContent || allOptimizationSuggestions.length === 0}
+              className="w-full"
+            >
+              {isSynthesizingContent ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Synthesizing Best Content...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Synthesize Best Content from All Options
+                </>
+              )}
+            </Button>
+            
+            {/* Display synthesized content */}
+            {synthesizedContent && (
+              <Card className="border border-primary/30 shadow-md">
+                <CardHeader className="bg-primary/5 pb-2">
+                  <CardTitle className="flex justify-between items-center">
+                    <span>AI-Synthesized Content</span>
+                    <Badge variant="default">
+                      {synthesizedContent.conversionEstimate.improvement} Improvement
+                    </Badge>
+                  </CardTitle>
+                  <CardDescription>
+                    Optimally combined content from all suggestions
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="py-3">
+                  <div className="space-y-3">
+                    <div>
+                      <h3 className="text-sm font-medium mb-1">Conversion Estimate</h3>
+                      <div className="flex justify-between text-xs mb-1">
+                        <span>Before: {synthesizedContent.conversionEstimate.before}</span>
+                        <span>After: {synthesizedContent.conversionEstimate.after}</span>
+                      </div>
+                      <Progress value={parseFloat(synthesizedContent.conversionEstimate.after)} className="h-1.5" />
+                    </div>
+                    
+                    <div>
+                      <h3 className="text-sm font-medium mb-1">Key Improvements</h3>
+                      <ul className="text-xs space-y-1">
+                        {synthesizedContent.keyImprovements.map((improvement, i) => (
+                          <li key={i} className="flex items-start">
+                            <CheckCircle className="h-3 w-3 mr-1 text-primary flex-shrink-0 mt-0.5" />
+                            <span><strong>{improvement.area}:</strong> {improvement.benefit}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    
+                    <div>
+                      <h3 className="text-sm font-medium mb-1">Updated Keywords</h3>
+                      <div className="flex flex-wrap gap-1">
+                        {synthesizedContent.updatedKeywords.slice(0, 5).map((keyword, i) => (
+                          <Badge key={i} variant="outline" className="text-xs">
+                            {keyword}
+                          </Badge>
+                        ))}
+                        {synthesizedContent.updatedKeywords.length > 5 && (
+                          <Badge variant="outline" className="text-xs">
+                            +{synthesizedContent.updatedKeywords.length - 5} more
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <h3 className="text-sm font-medium mb-1">SEO Score</h3>
+                      <div className="flex justify-between text-xs mb-1">
+                        <span>Before: {synthesizedContent.seoScore.before}</span>
+                        <span>After: {synthesizedContent.seoScore.after}</span>
+                      </div>
+                      <Progress value={parseFloat(synthesizedContent.seoScore.after)} max={100} className="h-1.5" />
+                    </div>
+                  </div>
+                </CardContent>
+                <CardFooter className="pt-0">
+                  <Button 
+                    onClick={handleApplySynthesizedContent}
+                    className="w-full"
+                  >
+                    Apply Synthesized Content
+                  </Button>
+                </CardFooter>
+              </Card>
+            )}
+            
+            {/* Display individual optimization options */}
+            {!synthesizedContent && conciseSuggestions.length > 0 && (
+              <div className="space-y-4">
+                <h3 className="text-base font-medium">Available Content Options</h3>
+                {conciseSuggestions.map((suggestion, idx) => (
+                  <Card 
+                    key={idx} 
+                    className={`cursor-pointer transition-all hover:shadow-md ${
+                      selectedConciseSuggestionIndex === idx ? 'ring-2 ring-primary' : ''
+                    }`}
+                    onClick={() => handleSelectSuggestion(idx)}
+                  >
+                    <CardHeader className="pb-2">
+                      <div className="flex justify-between items-center">
+                        <CardTitle className="text-base">{suggestion.title}</CardTitle>
+                        <Badge variant="default" className="text-xs">
+                          {suggestion.trafficPotential}% Traffic
+                        </Badge>
+                      </div>
+                      <CardDescription>{suggestion.description}</CardDescription>
+                    </CardHeader>
+                    
+                    <CardContent className="pb-2">
+                      <div className="space-y-3">
+                        <div>
+                          <p className="text-sm font-medium mb-1">Top Keywords</p>
+                          <div className="flex flex-wrap gap-1">
+                            {suggestion.keywords.slice(0, 4).map((keyword, kidx) => (
+                              <Badge key={kidx} variant="outline" className="text-xs">
+                                {keyword}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <div>
+                            <p className="font-medium text-xs mb-1">Content Changes</p>
+                            <ul className="text-xs text-muted-foreground space-y-1">
+                              {suggestion.changes.content.slice(0, 3).map((change, cidx) => (
+                                <li key={cidx} className="flex items-start">
+                                  <ChevronRight className="h-3 w-3 mr-1 flex-shrink-0 mt-0.5" />
+                                  <span>{change}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                    
+                    <CardFooter className="pt-0">
+                      <Button 
+                        variant={selectedConciseSuggestionIndex === idx ? "default" : "outline"} 
+                        size="sm" 
+                        className="w-full"
+                      >
+                        {selectedConciseSuggestionIndex === idx ? (
+                          <>
+                            <CheckCircle className="h-4 w-4 mr-2" /> Selected
+                          </>
+                        ) : "Preview This Option"}
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
           
-          {/* Display keyword traffic analysis */}
-          {renderKeywordsWithTraffic()}
+          <TabsContent value="design-options" className="mt-0 space-y-4">
+            <div className="flex justify-between items-center">
+              <h2 className="text-lg font-semibold">Design Options</h2>
+              <Button
+                variant="outline"
+                onClick={handleGenerateDesignOptions}
+                disabled={isGeneratingDesigns}
+                size="sm"
+              >
+                {isGeneratingDesigns ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" /> 
+                ) : (
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                )}
+                Generate
+              </Button>
+            </div>
+            
+            {/* Generate design options button (if none exist yet) */}
+            {!designOptions && !isGeneratingDesigns && (
+              <Button
+                variant="default"
+                onClick={handleGenerateDesignOptions}
+                className="w-full"
+              >
+                <PaintBrush className="h-4 w-4 mr-2" />
+                Generate Design Options
+              </Button>
+            )}
+            
+            {/* Loading state */}
+            {isGeneratingDesigns && (
+              <div className="text-center py-12">
+                <Loader2 className="h-10 w-10 mx-auto animate-spin text-primary mb-4" />
+                <p className="text-muted-foreground">Generating design options...</p>
+                <p className="text-xs text-muted-foreground mt-2">AI is creating multiple design variations optimized for your target audience</p>
+              </div>
+            )}
+            
+            {/* Display design options */}
+            {designOptions && designOptions.options && (
+              <div className="space-y-4">
+                <h3 className="text-base font-medium">Available Design Options</h3>
+                {designOptions.options.map((design, idx) => (
+                  <Card 
+                    key={idx} 
+                    className={`cursor-pointer transition-all hover:shadow-md ${
+                      selectedDesignIndex === idx ? 'ring-2 ring-primary' : ''
+                    }`}
+                    onClick={() => handleSelectDesign(idx)}
+                  >
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base">{design.name}</CardTitle>
+                      <CardDescription>{design.description}</CardDescription>
+                    </CardHeader>
+                    
+                    <CardContent className="pb-2">
+                      <div className="space-y-3">
+                        <div>
+                          <p className="text-sm font-medium mb-1">Color Palette</p>
+                          <div className="flex space-x-1 my-2">
+                            {design.colorScheme.map((color, i) => (
+                              <div 
+                                key={i}
+                                className="w-6 h-6 rounded-full border"
+                                style={{ backgroundColor: color }}
+                                title={color}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <div>
+                            <p className="font-medium text-xs mb-1">Typography</p>
+                            <div className="text-xs text-muted-foreground">
+                              <div>Headings: <span className="font-medium">{design.fontPairings.heading}</span></div>
+                              <div>Body: <span className="font-medium">{design.fontPairings.body}</span></div>
+                            </div>
+                          </div>
+                          <div>
+                            <p className="font-medium text-xs mb-1">CTA Style</p>
+                            <div className="text-xs text-muted-foreground">
+                              <div>{design.cta.style}</div>
+                              <div>Position: {design.cta.position}</div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <p className="font-medium text-xs mb-1">Conversion Focus</p>
+                          <div className="text-xs text-muted-foreground">
+                            {design.conversionFocus}
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                    
+                    <CardFooter className="pt-0">
+                      <Button 
+                        variant={selectedDesignIndex === idx ? "default" : "outline"} 
+                        size="sm" 
+                        className="w-full"
+                      >
+                        {selectedDesignIndex === idx ? (
+                          <>
+                            <CheckCircle className="h-4 w-4 mr-2" /> Selected
+                          </>
+                        ) : "Preview This Design"}
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                ))}
+                
+                <Button 
+                  onClick={handleApplyDesign}
+                  className="w-full mt-4"
+                  disabled={!designOptions || designOptions.options.length === 0}
+                >
+                  Apply Selected Design
+                </Button>
+              </div>
+            )}
+          </TabsContent>
         </div>
+        
         {/* Right: Live Mobile Preview */}
         <div className="hidden md:flex w-2/3 h-full bg-muted/10 p-8 items-center justify-center overflow-y-auto">
           <div className="w-[375px] h-[700px] bg-white rounded-2xl shadow-2xl border flex flex-col overflow-hidden">
@@ -423,7 +675,7 @@ const DynamicLandingPageOptimizer: React.FC<DynamicLandingPageOptimizerProps> = 
             </div>
             <iframe
               title="Landing Page Preview"
-              srcDoc={optimizationSuggestions ? applyOptimizationsToHTML(htmlContent, optimizationSuggestions) : htmlContent}
+              srcDoc={previewHtml}
               className="w-full h-full border-0"
               style={{ borderRadius: 0 }}
             />

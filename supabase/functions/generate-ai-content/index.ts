@@ -39,6 +39,14 @@ serve(async (req) => {
       systemPrompt = `You are a leading AI expert in landing page optimization, conversion rate optimization, and SEO. 
       You provide detailed, structured analysis and suggestions to improve web pages for better performance, higher conversion rates, and improved search engine rankings.`;
       model = 'gpt-4o'; // Use more capable model for in-depth analysis
+    } else if (mode === 'content_synthesis') {
+      systemPrompt = `You are a master content synthesizer with exceptional skills in combining multiple optimization ideas into one cohesive, highly effective strategy. 
+      Your expertise is in taking various content suggestions and producing a unified, optimized version that captures the best elements from each.`;
+      model = 'gpt-4o'; // Use more capable model for synthesis
+    } else if (mode === 'design_options') {
+      systemPrompt = `You are a UI/UX expert specializing in landing page design. 
+      Create three distinct design options with different aesthetics, color schemes, and layouts, while maintaining brand consistency and conversion focus.`;
+      model = 'gpt-4o'; // Use more capable model for design
     }
 
     // If depth is set to deep, use more capable model for more thorough analysis
@@ -50,172 +58,23 @@ serve(async (req) => {
     let responseFormat = {};
     if (mode === 'page_optimization') {
       responseFormat = {
-        type: "json_object",
-        schema: {
-          type: "object",
-          properties: {
-            headline: {
-              type: "object", 
-              properties: {
-                original: { type: "string" },
-                suggested: { type: "string" },
-                reason: { type: "string" }
-              }
-            },
-            cta: {
-              type: "object",
-              properties: {
-                original: { type: "string" },
-                suggested: { type: "string" },
-                reason: { type: "string" }
-              }
-            },
-            content: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  section: { type: "string" },
-                  original: { type: "string" },
-                  suggested: { type: "string" },
-                  reason: { type: "string" }
-                }
-              }
-            },
-            keywords: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  keyword: { type: "string" },
-                  relevance: { type: "string", enum: ["high", "medium", "low"] },
-                  trafficPotential: { type: "string" },
-                  difficulty: { type: "string" }
-                }
-              }
-            },
-            structure: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  suggestion: { type: "string" },
-                  reason: { type: "string" }
-                }
-              }
-            },
-            trafficEstimate: {
-              type: "object",
-              properties: {
-                current: { type: "string" },
-                potential: { type: "string" },
-                confidence: { type: "string", enum: ["high", "medium", "low"] }
-              }
-            },
-            colors: {
-              type: "array",
-              items: { type: "string" }
-            }
-          }
-        }
+        type: "json_object"
       };
     } else if (mode === 'ad_generation') {
       responseFormat = {
-        type: "json_object",
-        schema: {
-          type: "object",
-          properties: {
-            facebook: {
-              type: "object",
-              properties: {
-                headline: { type: "string" },
-                primary_text: { type: "string" },
-                description: { type: "string" },
-                cta: { type: "string" },
-                status: { type: "string" }
-              }
-            },
-            instagram: {
-              type: "object",
-              properties: {
-                caption: { type: "string" },
-                hashtags: { type: "string" },
-                status: { type: "string" }
-              }
-            },
-            twitter: {
-              type: "object",
-              properties: {
-                tweet_copy: { type: "string" },
-                hashtags: { type: "string" },
-                status: { type: "string" }
-              }
-            },
-            linkedin: {
-              type: "object",
-              properties: {
-                headline: { type: "string" },
-                description: { type: "string" },
-                cta: { type: "string" }
-              }
-            },
-            google: {
-              type: "object",
-              properties: {
-                headline1: { type: "string" },
-                headline2: { type: "string" },
-                headline3: { type: "string" },
-                description1: { type: "string" },
-                description2: { type: "string" }
-              }
-            }
-          }
-        }
+        type: "json_object"
       };
     } else if (mode === 'ai_optimize') {
       responseFormat = {
-        type: "json_object",
-        schema: {
-          type: "object",
-          properties: {
-            suggestedKeywords: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  keyword: { type: "string" },
-                  traffic: { type: "string" },
-                  difficulty: { type: "string" },
-                  relevance: { type: "string" },
-                  ctr: { type: "string" },
-                  conversion: { type: "string" }
-                }
-              }
-            },
-            optimizedContent: { type: "string" },
-            recommendations: { 
-              type: "array",
-              items: { type: "string" }
-            },
-            headlines: {
-              type: "array",
-              items: { type: "string" }
-            },
-            designSuggestions: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  category: { type: "string" },
-                  suggestions: {
-                    type: "array",
-                    items: { type: "string" }
-                  }
-                }
-              }
-            }
-          }
-        }
+        type: "json_object"
+      };
+    } else if (mode === 'content_synthesis') {
+      responseFormat = {
+        type: "json_object"
+      };
+    } else if (mode === 'design_options') {
+      responseFormat = {
+        type: "json_object"
       };
     }
 
@@ -237,7 +96,6 @@ serve(async (req) => {
           { role: "system", content: systemPrompt + keywordsContext },
           { role: "user", content: prompt }
         ],
-        response_format: Object.keys(responseFormat).length > 0 ? responseFormat : undefined,
         temperature: 0.7,
       }),
     });
@@ -250,7 +108,7 @@ serve(async (req) => {
 
     let result;
     try {
-      // If response_format is JSON, parse the content
+      // If responseFormat is specified, try to parse the content as JSON
       if (Object.keys(responseFormat).length > 0) {
         result = JSON.parse(data.choices[0].message.content);
       } else {

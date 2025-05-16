@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -263,7 +262,7 @@ const LandingPageEditor = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={handleAIOptimize}
+              onClick={() => setShowOptimizer(true)}
               id="radix-:r0:-trigger-optimize"
             >
               <Sparkles className="mr-2 h-4 w-4" /> AI Optimize
