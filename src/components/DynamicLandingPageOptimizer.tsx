@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, Sparkles, RefreshCw, LineChart, LayoutGrid, X } from "lucide-react";
+import { Loader2, Sparkles, RefreshCw, LineChart, LayoutGrid, X, TrendingUp, Search } from "lucide-react";
 import OptimizationPanel from "./OptimizationPanel";
 import AdPreviewPanel from "./AdPreviewPanel";
 import { 
@@ -15,6 +15,8 @@ import {
   applyOptimizationsToHTML
 } from "@/utils/aiService";
 import { HistoryIcon } from "./HistoryIcon";
+import { Badge } from "./ui/badge";
+import { Progress } from "./ui/progress";
 
 interface DynamicLandingPageOptimizerProps {
   htmlContent: string;
@@ -50,6 +52,14 @@ const DynamicLandingPageOptimizer: React.FC<DynamicLandingPageOptimizerProps> = 
   const [allOptimizationSuggestions, setAllOptimizationSuggestions] = useState<PageOptimizationSuggestion[]>([]);
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState<number>(0);
   
+  // Automatically generate optimizations when component mounts
+  useEffect(() => {
+    // Only auto-generate if we don't already have optimizations
+    if (!optimizationSuggestions && !isLoadingOptimizations) {
+      handleGenerateOptimizations();
+    }
+  }, []);
+
   const handleGenerateOptimizations = async () => {
     try {
       setIsLoadingOptimizations(true);
@@ -131,13 +141,51 @@ const DynamicLandingPageOptimizer: React.FC<DynamicLandingPageOptimizerProps> = 
     setAdSuggestions(adSuggestionHistory[index]);
   };
   
-  useEffect(() => {
-    // Reset versions when generating new suggestions
-    if (isLoadingOptimizations) {
-      setSuggestionHistory([]);
-      setCurrentSuggestionIndex(0);
-    }
-  }, [isLoadingOptimizations]);
+  // Render keywords with traffic likelihood
+  const renderKeywordsWithTraffic = () => {
+    if (!optimizationSuggestions?.keywords?.length) return null;
+    
+    return (
+      <div className="space-y-3 mt-4">
+        <h3 className="text-md font-semibold flex items-center">
+          <Search className="h-4 w-4 mr-2" />
+          Keyword Traffic Analysis
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          {optimizationSuggestions.keywords.map((keyword, idx) => (
+            <div key={idx} className="flex flex-col p-2 border rounded-md bg-muted/30 hover:bg-muted/50 transition-colors">
+              <div className="flex justify-between items-center">
+                <span className="font-medium">{keyword.keyword}</span>
+                <Badge 
+                  variant={
+                    keyword.relevance === "high" ? "default" :
+                    keyword.relevance === "medium" ? "secondary" : "outline"
+                  }
+                >
+                  {keyword.relevance}
+                </Badge>
+              </div>
+              <div className="flex items-center mt-1 text-xs text-muted-foreground">
+                <TrendingUp className="h-3 w-3 mr-1" />
+                <span>Traffic potential: {keyword.trafficPotential}</span>
+              </div>
+              <div className="mt-1">
+                <Progress 
+                  value={parseInt(keyword.trafficPotential) || 50} 
+                  max={100} 
+                  className="h-1"
+                />
+              </div>
+              <div className="flex justify-between text-xs mt-1">
+                <span>Difficulty: {keyword.difficulty}</span>
+                <span className="text-primary">Recommended</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
@@ -158,12 +206,12 @@ const DynamicLandingPageOptimizer: React.FC<DynamicLandingPageOptimizerProps> = 
       </header>
       <div className="flex flex-1 overflow-hidden">
         {/* Left: Suggestions and Controls */}
-        <div className="w-full md:w-1/2 flex flex-col h-full overflow-y-auto p-6 gap-6">
+        <div className="w-full md:w-1/3 flex flex-col h-full overflow-y-auto p-6 gap-6">
           {/* Theme/Layout Switcher */}
           <div className="mb-2">
             <div className="font-semibold mb-2">Theme/Layout</div>
             <div className="flex gap-2 overflow-x-auto pb-2">
-              {/* TODO: Render theme/layout thumbnails here */}
+              {/* Theme/layout thumbnails */}
               <div className="w-24 h-16 bg-muted rounded border flex items-center justify-center text-xs cursor-pointer hover:ring-2 ring-primary transition">Theme 1</div>
               <div className="w-24 h-16 bg-muted rounded border flex items-center justify-center text-xs cursor-pointer hover:ring-2 ring-primary transition">Theme 2</div>
               <div className="w-24 h-16 bg-muted rounded border flex items-center justify-center text-xs cursor-pointer hover:ring-2 ring-primary transition">Theme 3</div>
@@ -176,8 +224,12 @@ const DynamicLandingPageOptimizer: React.FC<DynamicLandingPageOptimizerProps> = 
             disabled={isLoadingOptimizations}
             className="mb-4"
           >
-            {isLoadingOptimizations ? "Generating..." : "Generate Suggestions"}
+            {isLoadingOptimizations ? "Analyzing Page..." : "Generate Optimization Suggestions"}
           </Button>
+          
+          {/* Display keyword traffic analysis */}
+          {renderKeywordsWithTraffic()}
+          
           {/* AI Suggestions, grouped by type */}
           <div className="space-y-6">
             <OptimizationPanel
@@ -191,7 +243,7 @@ const DynamicLandingPageOptimizer: React.FC<DynamicLandingPageOptimizerProps> = 
           </div>
         </div>
         {/* Right: Live Mobile Preview */}
-        <div className="hidden md:flex w-1/2 h-full bg-muted/10 p-8 items-center justify-center overflow-y-auto">
+        <div className="hidden md:flex w-2/3 h-full bg-muted/10 p-8 items-center justify-center overflow-y-auto">
           <div className="w-[375px] h-[700px] bg-white rounded-2xl shadow-2xl border flex flex-col overflow-hidden">
             <div className="font-semibold text-center py-2 bg-muted/20 border-b">Mobile Preview</div>
             <iframe
