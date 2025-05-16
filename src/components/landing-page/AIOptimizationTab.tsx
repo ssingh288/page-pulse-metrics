@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Sparkles, FileText, Lightbulb, LineChart } from "lucide-react";
+import { Loader2, Sparkles, FileText, Lightbulb, LineChart, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -91,6 +91,16 @@ export const AIOptimizationTab: React.FC<AIOptimizationTabProps> = ({
     
     onApplyOptimizations(optimizedHtml);
     toast.success("Applied AI optimizations to your landing page!");
+  };
+  
+  // Function to open preview in a new tab
+  const openPreviewInNewTab = () => {
+    const previewWindow = window.open('', '_blank');
+    if (previewWindow) {
+      previewWindow.document.write(optimizedHtml);
+      previewWindow.document.title = 'Optimized Landing Page Preview';
+      previewWindow.document.close();
+    }
   };
 
   return (
@@ -200,9 +210,19 @@ export const AIOptimizationTab: React.FC<AIOptimizationTabProps> = ({
                 />
               </div>
               
-              <div className="mt-4 flex justify-end">
-                <Button onClick={handleApplyOptimizations}>
-                  Apply Optimizations
+              <div className="mt-4 flex justify-between items-center">
+                <Button 
+                  variant="outline" 
+                  onClick={openPreviewInNewTab}
+                  className="flex items-center gap-1"
+                >
+                  <ExternalLink className="h-4 w-4 mr-1" />
+                  Preview in new tab
+                </Button>
+                
+                <Button onClick={handleApplyOptimizations} className="flex items-center">
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Apply Optimizations and preview
                 </Button>
               </div>
             </CardContent>
