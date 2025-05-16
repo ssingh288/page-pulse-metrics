@@ -42,7 +42,6 @@ import {
 } from "@/components/ui/dialog";
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import DynamicLandingPageOptimizer from '@/components/DynamicLandingPageOptimizer';
 import { getImmediateOptimization } from '@/utils/optimizationUtils';
 import { Progress } from '@/components/ui/progress';
 
@@ -63,7 +62,6 @@ const LandingPageEditor = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
-  const [showOptimizer, setShowOptimizer] = useState(false);
   const [optimizedContent, setOptimizedContent] = useState("");
   const [trafficReachEstimate, setTrafficReachEstimate] = useState({
     before: "0%",
@@ -73,6 +71,7 @@ const LandingPageEditor = () => {
   });
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [activeTab, setActiveTab] = useState("editor");
+  const [showOptimizationDialog, setShowOptimizationDialog] = useState(false);
   
   // Add state for AI optimization
   const [optimizerData, setOptimizerData] = useState({
@@ -208,12 +207,6 @@ const LandingPageEditor = () => {
     }
   }, [htmlContent, editor]);
 
-  // Debug: log editor and htmlContent changes
-  useEffect(() => {
-    console.log('Tiptap editor instance:', editor);
-    console.log('htmlContent:', htmlContent);
-  }, [editor, htmlContent]);
-
   // Function to open preview in a new tab
   const openPreviewInNewTab = () => {
     const previewWindow = window.open('', '_blank');
@@ -224,20 +217,20 @@ const LandingPageEditor = () => {
     }
   };
 
-  // Function to handle AI optimizations
+  // Function to handle AI optimizations - now much simpler!
   const handleAIOptimize = () => {
     setIsOptimizing(true);
     
-    // Get the page information for optimization
-    const pageInfo = {
-      title: optimizerData.title,
-      audience: optimizerData.audience,
-      industry: optimizerData.industry,
-      campaign_type: optimizerData.campaign_type,
-      keywords: optimizerData.keywords,
-    };
-    
     try {
+      // Get the page information for optimization
+      const pageInfo = {
+        title: optimizerData.title,
+        audience: optimizerData.audience,
+        industry: optimizerData.industry,
+        campaign_type: optimizerData.campaign_type,
+        keywords: optimizerData.keywords,
+      };
+      
       // Get immediate optimization with traffic reach estimate
       const { optimizedHtml, trafficReachEstimate: trafficStats } = getImmediateOptimization(
         htmlContent,
@@ -248,10 +241,9 @@ const LandingPageEditor = () => {
       setOptimizedContent(optimizedHtml);
       setTrafficReachEstimate(trafficStats);
       
-      // Switch to the optimized content tab
-      setActiveTab("optimized");
+      // Show the optimization dialog
+      setShowOptimizationDialog(true);
       
-      toast.success("AI optimization complete! View your optimized page.");
     } catch (error) {
       console.error("Optimization error:", error);
       toast.error("Error during optimization. Please try again.");
@@ -265,6 +257,7 @@ const LandingPageEditor = () => {
     setHtmlContent(optimizedContent);
     setOptimizedContent("");
     setActiveTab("editor");
+    setShowOptimizationDialog(false);
     handleSave();
     toast.success("AI optimizations applied to your page!");
   };
@@ -403,11 +396,6 @@ const LandingPageEditor = () => {
             <TabsTrigger value="visual" className="flex items-center">
               <PanelLeft className="mr-2 h-4 w-4" /> Visual Editor
             </TabsTrigger>
-            {optimizedContent && (
-              <TabsTrigger value="optimized" className="flex items-center">
-                <Sparkles className="mr-2 h-4 w-4" /> AI Optimized
-              </TabsTrigger>
-            )}
           </TabsList>
           
           <TabsContent value="editor">
@@ -432,96 +420,84 @@ const LandingPageEditor = () => {
               </CardContent>
             </Card>
           </TabsContent>
-          
-          <TabsContent value="optimized">
-            <Card>
-              <CardHeader>
-                <CardTitle>AI-Optimized Version</CardTitle>
-                <CardDescription>
-                  This is the AI-enhanced version of your landing page
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-4 space-y-4">
-                {/* Traffic Reach Statistics Card */}
-                <Card className="bg-muted/20">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg">Traffic Reach Estimate</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm font-medium mb-1">Current Reach</p>
-                        <div className="flex items-center">
-                          <div className="w-full mr-2">
-                            <Progress value={parseFloat(trafficReachEstimate.before)} className="h-2" />
-                          </div>
-                          <span className="text-sm font-bold">{trafficReachEstimate.before}</span>
-                        </div>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium mb-1">Potential Reach</p>
-                        <div className="flex items-center">
-                          <div className="w-full mr-2">
-                            <Progress value={parseFloat(trafficReachEstimate.after)} className="h-2" />
-                          </div>
-                          <span className="text-sm font-bold">{trafficReachEstimate.after}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="mt-3 flex items-center justify-between">
-                      <p className="text-sm">
-                        <span className="text-green-600 font-bold">+{trafficReachEstimate.improvement}</span> potential improvement
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Confidence: <span className="capitalize">{trafficReachEstimate.confidence}</span>
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                {/* Optimized Content Preview */}
-                <div className="border rounded-md">
-                  <iframe
-                    title="Optimized Preview"
-                    srcDoc={optimizedContent}
-                    className="w-full h-[400px]"
-                    style={{ border: 'none' }}
-                  />
-                </div>
-              </CardContent>
-              <CardFooter className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setActiveTab("editor")}>
-                  Cancel
-                </Button>
-                <Button onClick={handleApplyOptimizations}>
-                  Apply Optimizations
-                </Button>
-              </CardFooter>
-            </Card>
-          </TabsContent>
         </Tabs>
         
-        {showOptimizer && (
-          <Dialog open={showOptimizer} onOpenChange={setShowOptimizer}>
-            <DialogContent className="max-w-7xl max-h-[90vh]">
-              <DynamicLandingPageOptimizer
-                htmlContent={htmlContent}
-                pageInfo={{
-                  title: optimizerData.title,
-                  audience: optimizerData.audience,
-                  industry: optimizerData.industry,
-                  campaign_type: optimizerData.campaign_type,
-                  keywords: optimizerData.keywords,
-                }}
-                onApplyChanges={optimizedHtml => {
-                  setHtmlContent(optimizedHtml);
-                  setShowOptimizer(false);
-                  toast.success("AI optimizations applied successfully!");
-                }}
+        {/* New AI Optimization Dialog - Simpler and more direct */}
+        <Dialog open={showOptimizationDialog} onOpenChange={setShowOptimizationDialog}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-primary" />
+                AI-Optimized Landing Page
+              </DialogTitle>
+              <DialogDescription>
+                Your page has been optimized to improve conversions and traffic
+              </DialogDescription>
+            </DialogHeader>
+            
+            {/* Traffic Reach Statistics */}
+            <div className="bg-muted/20 rounded-lg p-4 border mb-4">
+              <h3 className="text-lg font-semibold mb-2">Traffic Reach Estimate</h3>
+              <div className="grid grid-cols-2 gap-4 mb-3">
+                <div>
+                  <p className="text-sm font-medium mb-1">Current Reach</p>
+                  <div className="flex items-center">
+                    <div className="w-full mr-2">
+                      <Progress value={parseFloat(trafficReachEstimate.before)} className="h-2" />
+                    </div>
+                    <span className="text-sm font-bold">{trafficReachEstimate.before}</span>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm font-medium mb-1">Optimized Reach</p>
+                  <div className="flex items-center">
+                    <div className="w-full mr-2">
+                      <Progress value={parseFloat(trafficReachEstimate.after)} className="h-2" />
+                    </div>
+                    <span className="text-sm font-bold">{trafficReachEstimate.after}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <p className="text-sm">
+                  <span className="text-green-600 font-bold">+{trafficReachEstimate.improvement}</span> potential improvement
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Confidence: <span className="capitalize">{trafficReachEstimate.confidence}</span>
+                </p>
+              </div>
+            </div>
+            
+            {/* Preview of optimized content */}
+            <div className="border rounded-lg overflow-hidden">
+              <div className="bg-muted/20 p-2 border-b flex justify-between items-center">
+                <span className="text-sm font-medium">Optimized Preview</span>
+                <span 
+                  className="text-xs text-muted-foreground px-2 py-1 bg-background rounded-full flex items-center gap-1 cursor-pointer hover:bg-primary/10 transition-colors"
+                  onClick={openPreviewInNewTab}
+                >
+                  Fullscreen
+                  <ExternalLink className="h-3 w-3 ml-1" />
+                </span>
+              </div>
+              <iframe
+                title="Optimized Preview"
+                srcDoc={optimizedContent}
+                className="w-full h-[50vh]"
+                style={{ border: 'none' }}
               />
-            </DialogContent>
-          </Dialog>
-        )}
+            </div>
+            
+            <DialogFooter className="flex justify-end gap-2 mt-4">
+              <Button variant="outline" onClick={() => setShowOptimizationDialog(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleApplyOptimizations}>
+                Apply Optimizations
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
   );
