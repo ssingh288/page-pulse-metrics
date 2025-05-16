@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -126,7 +127,7 @@ const DynamicLandingPageOptimizer: React.FC<DynamicLandingPageOptimizerProps> = 
           title: "High Traffic Optimization",
           description: "Maximize search visibility with high-volume keywords and SEO-optimized content structure",
           trafficPotential: 85,
-          keywords: allSuggestions[0].keywords?.slice(0, 5).map(k => k.keyword) || [],
+          keywords: allSuggestions[0]?.keywords?.slice(0, 5)?.map(k => k.keyword) || [],
           changes: {
             content: ["Optimized headline structure", "SEO-focused content blocks", "Conversion-oriented CTA placement"],
             design: ["High contrast CTA buttons", "Social proof elements", "Streamlined navigation"]
@@ -137,7 +138,7 @@ const DynamicLandingPageOptimizer: React.FC<DynamicLandingPageOptimizerProps> = 
           title: "Conversion Focused",
           description: "Boost conversion rates with persuasive copy and strategic call-to-action placement",
           trafficPotential: 72,
-          keywords: allSuggestions[1].keywords?.slice(0, 5).map(k => k.keyword) || [],
+          keywords: allSuggestions[1]?.keywords?.slice(0, 5)?.map(k => k.keyword) || [],
           changes: {
             content: ["Benefit-driven headlines", "Problem-solution structure", "Testimonial integration"],
             design: ["Simplified form fields", "Trust indicators", "Directional cues to CTA"]
@@ -148,7 +149,7 @@ const DynamicLandingPageOptimizer: React.FC<DynamicLandingPageOptimizerProps> = 
           title: "Brand Authority",
           description: "Build credibility and thought leadership with industry-specific content strategy",
           trafficPotential: 68,
-          keywords: allSuggestions[2].keywords?.slice(0, 5).map(k => k.keyword) || [],
+          keywords: allSuggestions[2]?.keywords?.slice(0, 5)?.map(k => k.keyword) || [],
           changes: {
             content: ["Educational content blocks", "Expert quote integration", "Industry statistics"],
             design: ["Professional color palette", "Data visualization elements", "Featured case studies"]
@@ -177,7 +178,7 @@ const DynamicLandingPageOptimizer: React.FC<DynamicLandingPageOptimizerProps> = 
             title: "Basic SEO Optimization",
             description: "Improve search visibility with keyword optimization",
             trafficPotential: 65,
-            keywords: suggestion.keywords?.slice(0, 5).map(k => k.keyword) || [],
+            keywords: suggestion?.keywords?.slice(0, 5)?.map(k => k.keyword) || [],
             changes: {
               content: ["SEO-optimized headlines", "Keyword-rich content", "Meta description updates"],
               design: ["Improved readability", "Mobile responsiveness", "Faster loading"]
@@ -226,8 +227,10 @@ const DynamicLandingPageOptimizer: React.FC<DynamicLandingPageOptimizerProps> = 
       setSynthesizedContent(synthesis);
       
       // Update the preview HTML with synthesized content
-      const updatedHtml = applySynthesizedContentToHTML(htmlContent, synthesis);
-      setPreviewHtml(updatedHtml);
+      if (synthesis) {
+        const updatedHtml = applySynthesizedContentToHTML(htmlContent, synthesis);
+        setPreviewHtml(updatedHtml);
+      }
       
       toast.success("Created optimized content synthesis!");
     } catch (error) {
@@ -248,7 +251,7 @@ const DynamicLandingPageOptimizer: React.FC<DynamicLandingPageOptimizerProps> = 
       setSelectedDesignIndex(0);
       
       // Update preview HTML with first design option
-      if (designs.options && designs.options.length > 0) {
+      if (designs?.options && designs.options.length > 0) {
         const updatedHtml = applyDesignToHTML(htmlContent, designs.options[0]);
         setPreviewHtml(updatedHtml);
       }
@@ -266,7 +269,7 @@ const DynamicLandingPageOptimizer: React.FC<DynamicLandingPageOptimizerProps> = 
     setSelectedDesignIndex(index);
     
     // Update preview HTML with selected design
-    if (designOptions && designOptions.options && designOptions.options[index]) {
+    if (designOptions?.options && designOptions.options[index]) {
       const updatedHtml = applyDesignToHTML(htmlContent, designOptions.options[index]);
       setPreviewHtml(updatedHtml);
     }
@@ -286,7 +289,7 @@ const DynamicLandingPageOptimizer: React.FC<DynamicLandingPageOptimizerProps> = 
   };
   
   const handleApplyDesign = () => {
-    if (!designOptions || !designOptions.options || !designOptions.options[selectedDesignIndex]) return;
+    if (!designOptions?.options || !designOptions.options[selectedDesignIndex]) return;
     
     const updatedHtml = applyDesignToHTML(htmlContent, designOptions.options[selectedDesignIndex]);
     onApplyChanges(updatedHtml);
@@ -295,7 +298,9 @@ const DynamicLandingPageOptimizer: React.FC<DynamicLandingPageOptimizerProps> = 
   
   const handleSelectSuggestion = (index: number) => {
     setSelectedSuggestionIndex(index);
-    setOptimizationSuggestions(allOptimizationSuggestions[index]);
+    if (allOptimizationSuggestions && allOptimizationSuggestions[index]) {
+      setOptimizationSuggestions(allOptimizationSuggestions[index]);
+    }
     setSelectedConciseSuggestionIndex(index);
     
     // Update preview HTML with selected suggestion
@@ -307,11 +312,15 @@ const DynamicLandingPageOptimizer: React.FC<DynamicLandingPageOptimizerProps> = 
   
   const handleSelectFromHistory = (index: number) => {
     setCurrentSuggestionIndex(index);
-    setOptimizationSuggestions(suggestionHistory[index]);
+    if (suggestionHistory && suggestionHistory[index]) {
+      setOptimizationSuggestions(suggestionHistory[index]);
+    }
   };
   
   const handleSelectAdFromHistory = (index: number) => {
-    setAdSuggestions(adSuggestionHistory[index]);
+    if (adSuggestionHistory && adSuggestionHistory[index]) {
+      setAdSuggestions(adSuggestionHistory[index]);
+    }
   };
   
   // Function to open preview in a new tab
@@ -373,7 +382,7 @@ const DynamicLandingPageOptimizer: React.FC<DynamicLandingPageOptimizerProps> = 
             <Button
               variant="default"
               onClick={handleSynthesizeContent}
-              disabled={isSynthesizingContent || allOptimizationSuggestions.length === 0}
+              disabled={isSynthesizingContent || !allOptimizationSuggestions || allOptimizationSuggestions.length === 0}
               className="w-full"
             >
               {isSynthesizingContent ? (
@@ -417,7 +426,7 @@ const DynamicLandingPageOptimizer: React.FC<DynamicLandingPageOptimizerProps> = 
                     <div>
                       <h3 className="text-sm font-medium mb-1">Key Improvements</h3>
                       <ul className="text-xs space-y-1">
-                        {synthesizedContent.keyImprovements.map((improvement, i) => (
+                        {synthesizedContent.keyImprovements && synthesizedContent.keyImprovements.map((improvement, i) => (
                           <li key={i} className="flex items-start">
                             <CheckCircle className="h-3 w-3 mr-1 text-primary flex-shrink-0 mt-0.5" />
                             <span><strong>{improvement.area}:</strong> {improvement.benefit}</span>
@@ -429,12 +438,12 @@ const DynamicLandingPageOptimizer: React.FC<DynamicLandingPageOptimizerProps> = 
                     <div>
                       <h3 className="text-sm font-medium mb-1">Updated Keywords</h3>
                       <div className="flex flex-wrap gap-1">
-                        {synthesizedContent.updatedKeywords.slice(0, 5).map((keyword, i) => (
+                        {synthesizedContent.updatedKeywords && synthesizedContent.updatedKeywords.slice(0, 5).map((keyword, i) => (
                           <Badge key={i} variant="outline" className="text-xs">
                             {keyword}
                           </Badge>
                         ))}
-                        {synthesizedContent.updatedKeywords.length > 5 && (
+                        {synthesizedContent.updatedKeywords && synthesizedContent.updatedKeywords.length > 5 && (
                           <Badge variant="outline" className="text-xs">
                             +{synthesizedContent.updatedKeywords.length - 5} more
                           </Badge>
@@ -490,7 +499,7 @@ const DynamicLandingPageOptimizer: React.FC<DynamicLandingPageOptimizerProps> = 
                         <div>
                           <p className="text-sm font-medium mb-1">Top Keywords</p>
                           <div className="flex flex-wrap gap-1">
-                            {suggestion.keywords.slice(0, 4).map((keyword, kidx) => (
+                            {suggestion.keywords && suggestion.keywords.slice(0, 4).map((keyword, kidx) => (
                               <Badge key={kidx} variant="outline" className="text-xs">
                                 {keyword}
                               </Badge>
@@ -573,7 +582,7 @@ const DynamicLandingPageOptimizer: React.FC<DynamicLandingPageOptimizerProps> = 
             )}
             
             {/* Display design options */}
-            {designOptions && designOptions.options && (
+            {designOptions && designOptions.options && designOptions.options.length > 0 && (
               <div className="space-y-4">
                 <h3 className="text-base font-medium">Available Design Options</h3>
                 {designOptions.options.map((design, idx) => (
@@ -594,7 +603,7 @@ const DynamicLandingPageOptimizer: React.FC<DynamicLandingPageOptimizerProps> = 
                         <div>
                           <p className="text-sm font-medium mb-1">Color Palette</p>
                           <div className="flex space-x-1 my-2">
-                            {design.colorScheme.map((color, i) => (
+                            {design.colorScheme && design.colorScheme.map((color, i) => (
                               <div 
                                 key={i}
                                 className="w-6 h-6 rounded-full border"
@@ -609,15 +618,15 @@ const DynamicLandingPageOptimizer: React.FC<DynamicLandingPageOptimizerProps> = 
                           <div>
                             <p className="font-medium text-xs mb-1">Typography</p>
                             <div className="text-xs text-muted-foreground">
-                              <div>Headings: <span className="font-medium">{design.fontPairings.heading}</span></div>
-                              <div>Body: <span className="font-medium">{design.fontPairings.body}</span></div>
+                              <div>Headings: <span className="font-medium">{design.fontPairings?.heading || 'Default'}</span></div>
+                              <div>Body: <span className="font-medium">{design.fontPairings?.body || 'Default'}</span></div>
                             </div>
                           </div>
                           <div>
                             <p className="font-medium text-xs mb-1">CTA Style</p>
                             <div className="text-xs text-muted-foreground">
-                              <div>{design.cta.style}</div>
-                              <div>Position: {design.cta.position}</div>
+                              <div>{design.cta?.style || 'Default'}</div>
+                              <div>Position: {design.cta?.position || 'Default'}</div>
                             </div>
                           </div>
                         </div>
@@ -625,7 +634,7 @@ const DynamicLandingPageOptimizer: React.FC<DynamicLandingPageOptimizerProps> = 
                         <div>
                           <p className="font-medium text-xs mb-1">Conversion Focus</p>
                           <div className="text-xs text-muted-foreground">
-                            {design.conversionFocus}
+                            {design.conversionFocus || 'Maximize conversions'}
                           </div>
                         </div>
                       </div>
@@ -650,7 +659,7 @@ const DynamicLandingPageOptimizer: React.FC<DynamicLandingPageOptimizerProps> = 
                 <Button 
                   onClick={handleApplyDesign}
                   className="w-full mt-4"
-                  disabled={!designOptions || designOptions.options.length === 0}
+                  disabled={!designOptions || !designOptions.options || designOptions.options.length === 0}
                 >
                   Apply Selected Design
                 </Button>

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -101,7 +102,7 @@ const LandingPageEditor = () => {
     // Set up optimizer data from page
     if (page) {
       setOptimizerData({
-        title: page.title,
+        title: page.title || "",
         audience: "General",
         industry: "Technology",
         campaign_type: "Lead Generation",
@@ -189,7 +190,7 @@ const LandingPageEditor = () => {
     if (editor && htmlContent !== editor.getHTML()) {
       editor.commands.setContent(htmlContent || '', false);
     }
-  }, [htmlContent]);
+  }, [htmlContent, editor]);
 
   // Debug: log editor and htmlContent changes
   useEffect(() => {

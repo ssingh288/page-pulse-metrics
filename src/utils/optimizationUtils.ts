@@ -76,7 +76,7 @@ export const republishOptimizedPage = async (
     if (fetchError) throw fetchError;
 
     // If no published URL exists, create one
-    let publishedUrl = pageData.published_url;
+    let publishedUrl = pageData?.published_url;
     if (!publishedUrl) {
       publishedUrl = `https://pagepulse-${pageId.substring(0, 8)}.example.com`;
     }
@@ -111,9 +111,9 @@ export const generateMockSuggestions = (
   }
 ): PageOptimizationSuggestion => {
   // Create mock optimization suggestions based on the page info
-  const baseTitle = pageInfo.title || "Landing Page";
-  const industry = pageInfo.industry || "Technology";
-  const audience = pageInfo.audience || "Professionals";
+  const baseTitle = pageInfo?.title || "Landing Page";
+  const industry = pageInfo?.industry || "Technology";
+  const audience = pageInfo?.audience || "Professionals";
   
   return {
     headline: {
@@ -194,9 +194,9 @@ export const generateMockAdSuggestions = (
   }
 ): AdSuggestion => {
   // Create mock ad suggestions based on the page info
-  const baseTitle = pageInfo.title || "Landing Page";
-  const industry = pageInfo.industry || "Technology";
-  const audience = pageInfo.audience || "Professionals";
+  const baseTitle = pageInfo?.title || "Landing Page";
+  const industry = pageInfo?.industry || "Technology";
+  const audience = pageInfo?.audience || "Professionals";
   
   return {
     facebook: {
