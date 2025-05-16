@@ -1,10 +1,9 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, Sparkles, RefreshCw, LineChart, LayoutGrid, X, TrendingUp, Search, CheckCircle, ChevronRight, PaintBrush, FileText, Edit } from "lucide-react";
+import { Loader2, Sparkles, RefreshCw, LineChart, LayoutGrid, X, TrendingUp, Search, CheckCircle, ChevronRight, Paintbrush, FileText, Edit } from "lucide-react";
 import OptimizationPanel from "./OptimizationPanel";
 import AdPreviewPanel from "./AdPreviewPanel";
 import { 
@@ -341,7 +340,7 @@ const DynamicLandingPageOptimizer: React.FC<DynamicLandingPageOptimizerProps> = 
                 <FileText className="h-4 w-4" /> Content
               </TabsTrigger>
               <TabsTrigger value="design-options" className="flex items-center gap-1">
-                <PaintBrush className="h-4 w-4" /> Design
+                <Paintbrush className="h-4 w-4" /> Design
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -559,7 +558,7 @@ const DynamicLandingPageOptimizer: React.FC<DynamicLandingPageOptimizerProps> = 
                 onClick={handleGenerateDesignOptions}
                 className="w-full"
               >
-                <PaintBrush className="h-4 w-4 mr-2" />
+                <Paintbrush className="h-4 w-4 mr-2" />
                 Generate Design Options
               </Button>
             )}
