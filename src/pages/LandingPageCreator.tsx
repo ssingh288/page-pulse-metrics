@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { toast } from "sonner";
@@ -12,6 +13,7 @@ import {
 import { FileText, Image, Sun, Moon, Trophy, User, Sparkles } from "lucide-react";
 import { LandingPageForm, LandingPageFormValues } from "@/components/landing-page/LandingPageForm";
 import { LandingPagePreview } from "@/components/landing-page/LandingPagePreview";
+import { AIOptimizationTab } from "@/components/landing-page/AIOptimizationTab";
 import { ThemeOption } from "@/utils/landingPageGenerator";
 import {
   LandingPageData,
@@ -314,8 +316,19 @@ const LandingPageCreator = () => {
   };
 
   // Handler for applying changes from the optimizer
-  const handleApplyOptimizations = (updatedHtml: string) => {
+  const handleApplyOptimizations = (updatedHtml: string, updatedKeywords?: string[]) => {
     setPreviewHtml(updatedHtml);
+    
+    // Update keywords if provided
+    if (updatedKeywords && updatedKeywords.length > 0) {
+      setKeywordSuggestions(updatedKeywords);
+      
+      // Update form values with the new keywords
+      setFormValues({
+        ...formValues,
+        keywords: updatedKeywords.join(', ')
+      });
+    }
     
     // Auto save with the optimized content
     autoSaveDraft(formValues);
@@ -394,9 +407,10 @@ const LandingPageCreator = () => {
       <Card className="glassmorphic-card shadow-2xl border-0 bg-white/80 backdrop-blur-lg rounded-2xl">
         <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/10 rounded-t-2xl">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid grid-cols-2 w-full mb-4 rounded-xl">
+            <TabsList className="grid grid-cols-3 w-full mb-4 rounded-xl">
               <TabsTrigger value="form" className="text-lg font-semibold transition-colors hover:bg-primary/10">Form</TabsTrigger>
               <TabsTrigger value="preview" className="text-lg font-semibold transition-colors hover:bg-primary/10">Preview</TabsTrigger>
+              <TabsTrigger value="optimize" className="text-lg font-semibold transition-colors hover:bg-primary/10">AI Optimize</TabsTrigger>
             </TabsList>
           </Tabs>
         </CardHeader>
@@ -435,6 +449,20 @@ const LandingPageCreator = () => {
                   Save & Publish
                 </Button>
               </div>
+            </div>
+          )}
+          {activeTab === "optimize" && (
+            <div className="p-4">
+              <AIOptimizationTab
+                formValues={formValues}
+                previewHtml={previewHtml}
+                onApplyOptimizations={handleApplyOptimizations}
+                isGenerating={generatingPage}
+                onUpdateGeneratingState={setGeneratingPage}
+                keywordSuggestions={keywordSuggestions}
+                onAddKeyword={handleAddKeyword}
+                onRemoveKeyword={handleRemoveKeyword}
+              />
             </div>
           )}
         </CardContent>

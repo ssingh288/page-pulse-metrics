@@ -35,6 +35,8 @@ serve(async (req) => {
       systemMessage = 'You are an AI assistant specialized in landing page optimization. You analyze landing pages and provide structured recommendations for improving conversion rates, user engagement, and SEO performance.';
     } else if (mode === 'ad_generation') {
       systemMessage = 'You are an AI assistant specialized in creating platform-specific ad content based on landing pages. You create optimized ad variations for different platforms maintaining brand consistency while leveraging platform-specific best practices.';
+    } else if (mode === 'keyword_optimization') {
+      systemMessage = 'You are an AI assistant specialized in keyword optimization. Analyze the provided content and keywords, and suggest optimized keywords with traffic estimates, difficulty scores, and relevance. Return a well-structured JSON response with keyword suggestions, traffic data, and optimized content recommendations.';
     }
     
     // Enhance prompt with keywords if they're provided
@@ -43,7 +45,7 @@ serve(async (req) => {
       enhancedPrompt += `\n\nPlease incorporate these keywords naturally in the content: ${keywords.join(', ')}`;
       
       // For landing page content, also suggest additional relevant keywords
-      if (mode === 'landing_page_content') {
+      if (mode === 'landing_page_content' || mode === 'keyword_optimization') {
         enhancedPrompt += `\n\nAlso, suggest 5-7 additional relevant keywords or phrases that could enhance the content's SEO performance.`;
       }
     }
@@ -61,7 +63,7 @@ serve(async (req) => {
           { role: 'user', content: enhancedPrompt }
         ],
         temperature: 0.7,
-        max_tokens: 1500,
+        max_tokens: mode === 'keyword_optimization' ? 2500 : 1500,
       }),
     });
 
@@ -95,6 +97,27 @@ serve(async (req) => {
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    } else if (mode === 'keyword_optimization') {
+      // For keyword optimization, try to parse as JSON if possible
+      try {
+        const parsedContent = JSON.parse(content);
+        return new Response(
+          JSON.stringify({ result: parsedContent }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } catch (e) {
+        // If it's not valid JSON, return structured content
+        const keywordData = {
+          suggestedKeywords: extractKeywords(content),
+          optimizedContent: content,
+          recommendations: extractRecommendations(content)
+        };
+        
+        return new Response(
+          JSON.stringify({ result: keywordData }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
     } else if (mode === 'page_optimization' || mode === 'ad_generation') {
       // For structured data responses, try to parse the JSON
       try {
@@ -129,3 +152,95 @@ serve(async (req) => {
     );
   }
 });
+
+// Helper function to extract keywords with metrics from content
+function extractKeywords(content: string): Array<{keyword: string, traffic: string, difficulty: string, relevance: string}> {
+  const keywords = [];
+  
+  // Look for patterns like "keyword: high traffic (80%), medium difficulty (50%)"
+  const keywordRegex = /([a-zA-Z0-9 -]+)(?::\s*([a-zA-Z]+)\s*traffic\s*\(?(\d+%?)?\)?)?(?:,\s*([a-zA-Z]+)\s*difficulty\s*\(?(\d+%?)?\)?)?/g;
+  let match;
+  
+  while ((match = keywordRegex.exec(content)) !== null) {
+    if (match[1]) {
+      keywords.push({
+        keyword: match[1].trim(),
+        traffic: match[3] || determineScore(match[2] || "medium"),
+        difficulty: match[5] || determineScore(match[4] || "medium"),
+        relevance: match[2] || "medium"
+      });
+    }
+  }
+  
+  // If no structured keywords found, extract any bullet points or numbered items as keywords
+  if (keywords.length === 0) {
+    const bulletPointRegex = /(?:^|\n)(?:[-•*]|\d+\.)\s*([^\n]+)/g;
+    while ((match = bulletPointRegex.exec(content)) !== null) {
+      if (match[1]) {
+        keywords.push({
+          keyword: match[1].trim(),
+          traffic: determineScore("medium"),
+          difficulty: determineScore("medium"),
+          relevance: "medium"
+        });
+      }
+    }
+  }
+  
+  return keywords;
+}
+
+// Helper function to extract recommendations from content
+function extractRecommendations(content: string): string[] {
+  const recommendations = [];
+  
+  // Look for sections labeled as recommendations, tips, suggestions
+  const sections = content.split(/\n\s*(?:#{1,3}|Recommendations?|Tips?|Suggestions?|How to optimize):/i);
+  
+  if (sections.length > 1) {
+    // Take the content after the heading
+    const recommendationSection = sections[1].split(/\n\s*(?:#{1,3})/)[0];
+    
+    // Split by bullet points or numbered items
+    const bulletPoints = recommendationSection.match(/(?:^|\n)(?:[-•*]|\d+\.)\s*([^\n]+)/g);
+    if (bulletPoints) {
+      bulletPoints.forEach(point => {
+        recommendations.push(point.replace(/^(?:[-•*]|\d+\.)\s*/, '').trim());
+      });
+    } else {
+      // If no bullet points, just use paragraphs
+      const paragraphs = recommendationSection.split(/\n\n+/);
+      paragraphs.forEach(para => {
+        const cleaned = para.trim();
+        if (cleaned.length > 10) {
+          recommendations.push(cleaned);
+        }
+      });
+    }
+  }
+  
+  // If no structured recommendations found, just return empty array
+  return recommendations;
+}
+
+// Helper function to convert text ratings to numeric scores
+function determineScore(rating: string): string {
+  switch(rating.toLowerCase()) {
+    case "very high":
+    case "high":
+      return "85%";
+    case "medium high":
+    case "medium-high":
+      return "70%";
+    case "medium":
+      return "50%";
+    case "medium low":
+    case "medium-low":
+      return "30%";
+    case "low":
+    case "very low":
+      return "15%";
+    default:
+      return "50%";
+  }
+}

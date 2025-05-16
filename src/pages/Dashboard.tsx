@@ -1,398 +1,455 @@
-
-import { useState, useEffect, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import Layout from "@/components/layout/Layout";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { Plus, ArrowRight, FileText, ChevronUp, ChevronDown, Calendar, ArrowUpDown } from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { MetricsCard } from "@/components/dashboard/MetricsCard";
+import { PageTable, PageData } from "@/components/dashboard/PageTable";
+import { ChevronRight, ArrowUpDown } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { format } from "date-fns";
-import { useTheme } from "next-themes";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Sun, Moon, Trophy, User, Sparkles } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
 
-interface LandingPage {
-  id: string;
-  title: string;
-  campaign_type: string;
-  published_at: string | null;
-  created_at: string;
-}
-
-interface PageWithMetrics extends LandingPage {
-  visitors: number;
-  clicks: number;
-  conversion_rate: number;
-}
-
-// Define filter types
-type FilterType = "all" | "published" | "draft";
-type SortDirection = "asc" | "desc";
+// Sample data for recent pages
+const recentPages = [
+  {
+    id: "94371989-eb8b-46a8-bb32-f8bff59434dc",
+    title: "AI workshop",
+    status: "draft",
+    visitors: 699,
+    conversionRate: 0.2389,
+    createdAt: new Date("2025-05-14"),
+  },
+  {
+    id: "ccf99145-b27f-4403-873d-29750a6dba28",
+    title: "AI workshop",
+    status: "draft",
+    visitors: 968,
+    conversionRate: 0.2696,
+    createdAt: new Date("2025-05-14"),
+  },
+  {
+    id: "74217ec6-f6a7-4529-96ce-7b77066905e0",
+    title: "AI workshop",
+    status: "draft",
+    visitors: 868,
+    conversionRate: 0.2143,
+    createdAt: new Date("2025-05-14"),
+  },
+  {
+    id: "a6443eed-562d-4f42-b5ab-9271e3f63ecb",
+    title: "AI workshop",
+    status: "draft",
+    visitors: 625,
+    conversionRate: 0.1536,
+    createdAt: new Date("2025-05-14"),
+  },
+  {
+    id: "a143723a-9fca-4643-853e-c06d3e7effac",
+    title: "AI workshop",
+    status: "draft",
+    visitors: 671,
+    conversionRate: 0.0775,
+    createdAt: new Date("2025-05-14"),
+  },
+];
 
 const Dashboard = () => {
   const { user } = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [pages, setPages] = useState<PageWithMetrics[]>([]);
-  const [totalVisitors, setTotalVisitors] = useState(0);
-  const [totalClicks, setTotalClicks] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
-  const [averageConversion, setAverageConversion] = useState(0);
-  const [showOnboarding, setShowOnboarding] = useState(true);
-  const { theme, setTheme } = useTheme();
-  const [achievements, setAchievements] = useState<string[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
   
-  // New state for filtering and sorting
-  const [filter, setFilter] = useState<FilterType>("all");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
-
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        if (!user) return;
-
-        setLoading(true);
-        
-        // Fetch landing pages
-        const { data: pagesData, error: pagesError } = await supabase
-          .from('landing_pages')
-          .select('id, title, campaign_type, published_at, created_at')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
-        
-        if (pagesError) {
-          throw pagesError;
-        }
-
-        // For demo purposes, generate mock metrics for each page
-        const pagesWithMetrics = pagesData.map(page => {
-          const visitors = Math.floor(Math.random() * 1000) + 100;
-          const clicks = Math.floor(Math.random() * visitors * 0.3);
-          const conversion_rate = clicks / visitors;
-          
-          return {
-            ...page,
-            visitors,
-            clicks,
-            conversion_rate
-          };
-        });
-
-        setPages(pagesWithMetrics);
-        
-        if (pagesWithMetrics.length > 0) {
-          const totalV = pagesWithMetrics.reduce((sum, page) => sum + page.visitors, 0);
-          const totalC = pagesWithMetrics.reduce((sum, page) => sum + page.clicks, 0);
-          
-          setTotalVisitors(totalV);
-          setTotalClicks(totalC);
-          setTotalPages(pagesWithMetrics.length);
-          setAverageConversion(totalV > 0 ? totalC / totalV : 0);
-        }
-      } catch (error: any) {
-        toast.error(`Error loading dashboard: ${error.message}`);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchDashboardData();
-  }, [user]);
-
-  useEffect(() => {
-    if (totalVisitors >= 1000 && !achievements.includes("First 1000 Visitors!")) {
-      setAchievements(a => [...a, "First 1000 Visitors!"]);
-    }
-    if (totalPages >= 5 && !achievements.includes("5 Pages Created!")) {
-      setAchievements(a => [...a, "5 Pages Created!"]);
-    }
-  }, [totalVisitors, totalPages, achievements]);
-
-  // Format conversion rate as percentage
-  const formatPercent = (value: number) => {
-    return `${(value * 100).toFixed(2)}%`;
-  };
-  
-  // Filter and sort pages
-  const filteredAndSortedPages = useMemo(() => {
-    // First filter the pages
-    const filtered = pages.filter(page => {
-      if (filter === "all") return true;
-      if (filter === "published") return page.published_at !== null;
-      if (filter === "draft") return page.published_at === null;
-      return true;
-    });
-    
-    // Then sort them
-    return [...filtered].sort((a, b) => {
-      const dateA = new Date(a.created_at).getTime();
-      const dateB = new Date(b.created_at).getTime();
-      return sortDirection === "desc" ? dateB - dateA : dateA - dateB;
-    });
-  }, [pages, filter, sortDirection]);
-  
-  // Calculate metrics based on filter
-  const filteredMetrics = useMemo(() => {
-    const filtered = pages.filter(page => {
-      if (filter === "all") return true;
-      if (filter === "published") return page.published_at !== null;
-      if (filter === "draft") return page.published_at === null;
-      return true;
-    });
-    
-    const totalFilteredPages = filtered.length;
-    const totalFilteredVisitors = filtered.reduce((sum, page) => sum + page.visitors, 0);
-    const totalFilteredClicks = filtered.reduce((sum, page) => sum + page.clicks, 0);
-    const avgFilteredConversion = totalFilteredVisitors > 0 
-      ? totalFilteredClicks / totalFilteredVisitors 
-      : 0;
-      
-    return {
-      totalPages: totalFilteredPages,
-      visitors: totalFilteredVisitors,
-      clicks: totalFilteredClicks,
-      conversion: avgFilteredConversion
-    };
-  }, [pages, filter]);
-  
-  // Helper function to determine active filter style
-  const getFilterStyle = (filterType: FilterType) => {
-    return filter === filterType 
-      ? "bg-primary/10 text-primary font-bold border-b-2 border-primary" 
-      : "hover:bg-primary/5";
-  };
-  
-  // Toggle sort direction
-  const toggleSortDirection = () => {
-    setSortDirection(prev => prev === "desc" ? "asc" : "desc");
-  };
+  // Add filtering function for landing pages
+  const filteredPages = recentPages.filter(page => 
+    page.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
-    <Layout title="Dashboard">
-      {/* Personalized Dashboard Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-        <div className="flex items-center gap-4">
-          <Avatar className="ring-2 ring-primary/30 shadow-lg">
-            <AvatarImage src={user?.user_metadata?.avatar_url || undefined} />
-            <AvatarFallback><User /></AvatarFallback>
-          </Avatar>
-          <div>
-            <h2 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent animate-fade-in">Welcome{user?.user_metadata?.full_name ? `, ${user.user_metadata.full_name}` : "!"}</h2>
-            <p className="text-muted-foreground text-lg">Here's an overview of your landing pages and performance 🚀</p>
-          </div>
+    <Layout>
+      <div className="flex flex-col space-y-6">
+        {/* Welcome Section */}
+        <div className="flex flex-col space-y-2">
+          <h2 className="text-3xl font-bold tracking-tight">Welcome back{user?.user_metadata?.name ? `, ${user.user_metadata.name}` : ''}!</h2>
+          <p className="text-muted-foreground">
+            Here's what's happening with your landing pages
+          </p>
         </div>
-        <div className="flex items-center gap-4">
-          <div 
-            className={`flex flex-col items-center cursor-pointer transition-all p-2 rounded-lg ${getFilterStyle("all")}`}
-            onClick={() => setFilter("all")}
-          >
-            <span className="text-2xl font-bold text-primary">{pages.length}</span>
-            <span className="text-xs text-muted-foreground">Total Pages</span>
-          </div>
-          <div 
-            className={`flex flex-col items-center cursor-pointer transition-all p-2 rounded-lg ${getFilterStyle("published")}`}
-            onClick={() => setFilter("published")}
-          >
-            <span className="text-2xl font-bold text-green-600">{pages.filter(p => p.published_at !== null).length}</span>
-            <span className="text-xs text-muted-foreground">Published</span>
-          </div>
-          <div 
-            className={`flex flex-col items-center cursor-pointer transition-all p-2 rounded-lg ${getFilterStyle("draft")}`}
-            onClick={() => setFilter("draft")}
-          >
-            <span className="text-2xl font-bold text-yellow-600">{pages.filter(p => p.published_at === null).length}</span>
-            <span className="text-xs text-muted-foreground">Drafts</span>
-          </div>
-          <Button variant="ghost" size="icon" aria-label="Toggle theme" onClick={() => setTheme(theme === "dark" ? "light" : "dark")} className="transition-colors hover:bg-primary/10">
-            {theme === "dark" ? <Sun /> : <Moon />}
-          </Button>
-        </div>
-      </div>
-      {/* Onboarding Tooltip */}
-      {showOnboarding && (
-        <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20 flex items-center gap-4 animate-fade-in shadow-md">
-          <Sparkles className="h-6 w-6 text-primary animate-bounce" />
-          <span className="text-base font-medium">Tip: Track your performance and optimize your pages for better results!</span>
-          <Button variant="outline" size="sm" onClick={() => setShowOnboarding(false)} className="ml-auto">Got it</Button>
-        </div>
-      )}
-      {/* Gamification Achievements */}
-      {achievements.length > 0 && (
-        <div className="mb-6 flex gap-2 flex-wrap">
-          {achievements.map((ach, i) => (
-            <Badge key={i} variant="secondary" className="flex items-center gap-1 bg-gradient-to-r from-yellow-300 to-yellow-500 text-yellow-900 animate-pulse shadow">
-              <Trophy className="h-4 w-4" /> {ach}
-            </Badge>
-          ))}
-        </div>
-      )}
-      {/* Progress Bar for Conversion Rate */}
-      <div className="mb-6">
-        <Progress value={filteredMetrics.conversion * 100} className="h-3 rounded-full bg-muted/30 shadow-inner" />
-        <div className="flex justify-between text-xs text-muted-foreground mt-1">
-          <span>0%</span>
-          <span>100% Conversion</span>
-        </div>
-      </div>
-      {/* Metrics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="transition-transform hover:scale-105">
-          <MetricsCard
-            title="Total Visitors"
-            value={loading ? "..." : filteredMetrics.visitors.toLocaleString()}
-            description={`For ${filter === "all" ? "all" : filter} pages`}
-            trend={8.2}
-            loading={loading}
-          />
-        </div>
-        <div className="transition-transform hover:scale-105">
-          <MetricsCard
-            title="Total Clicks"
-            value={loading ? "..." : filteredMetrics.clicks.toLocaleString()}
-            description={`On all ${filter === "all" ? "" : filter} call-to-action buttons`}
-            trend={12.5}
-            loading={loading}
-          />
-        </div>
-        <div className="transition-transform hover:scale-105">
-          <MetricsCard
-            title="Average Conversion"
-            value={loading ? "..." : formatPercent(filteredMetrics.conversion)}
-            description="Clicks divided by visitors"
-            trend={-2.4}
-            loading={loading}
-          />
-        </div>
-        <div className="transition-transform hover:scale-105">
-          <MetricsCard
-            title="Active Pages"
-            value={loading ? "..." : filteredMetrics.totalPages.toString()}
-            description={`Currently ${filter === "all" ? "total" : filter} pages`}
-            trend={0}
-            loading={loading}
-          />
-        </div>
-      </div>
-      {/* Recent Landing Pages Table */}
-      <Card className="glassmorphic-card shadow-2xl border-0 mt-6 bg-white/80 backdrop-blur-lg rounded-2xl">
-        <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/10 rounded-t-2xl">
-          <div className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle>
-                {filter === "all" ? "Recent Landing Pages" : 
-                 filter === "published" ? "Published Pages" : "Draft Pages"}
+
+        {/* Stats Overview */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Total Visitors
               </CardTitle>
-              <CardDescription>
-                {filter === "all" ? "Your recently created landing pages and their performance" : 
-                 filter === "published" ? "Your published landing pages" : "Your draft landing pages"}
-              </CardDescription>
-            </div>
-            <Button
-              variant="ghost" 
-              size="sm"
-              onClick={toggleSortDirection}
-              className="flex items-center gap-1"
-            >
-              <Calendar className="h-4 w-4 mr-1" />
-              Date
-              {sortDirection === "desc" ? 
-                <ChevronDown className="h-4 w-4" /> : 
-                <ChevronUp className="h-4 w-4" />
-              }
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="animate-pulse space-y-4">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="h-16 bg-muted rounded-md" />
-              ))}
-            </div>
-          ) : filteredAndSortedPages.length > 0 ? (
-            <div className="rounded-md border overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Visitors</TableHead>
-                    <TableHead className="text-right">Conversion</TableHead>
-                    <TableHead className="text-right">
-                      <div className="flex items-center justify-end">
-                        Created
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={toggleSortDirection}
-                          className="ml-1 p-0 h-auto"
-                        >
-                          <ArrowUpDown className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredAndSortedPages.slice(0, 5).map((page) => (
-                    <TableRow key={page.id} className="hover:bg-primary/5 transition-colors cursor-pointer">
-                      <TableCell className="font-medium">
-                        <Link
-                          to={`/pages/${page.id}/metrics`}
-                          className="hover:text-primary hover:underline flex items-center"
-                        >
-                          <FileText className="mr-2 h-4 w-4 text-muted-foreground" />
-                          {page.title}
-                        </Link>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={page.published_at ? "default" : "outline"} className="transition-colors">
-                          {page.published_at ? "Published" : "Draft"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">{page.visitors}</TableCell>
-                      <TableCell className="text-right">{formatPercent(page.conversion_rate)}</TableCell>
-                      <TableCell className="text-right">{format(new Date(page.created_at), "MMM d, yyyy")}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <FileText className="mx-auto h-12 w-12 text-primary/30 mb-4 animate-fade-in" />
-              <h3 className="text-lg font-medium mb-2">No {filter === "all" ? "" : filter} landing pages yet</h3>
-              <p className="text-muted-foreground mb-6">
-                Create your first landing page to get started
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                className="h-4 w-4 text-muted-foreground"
+              >
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">2,350</div>
+              <p className="text-xs text-muted-foreground">
+                +12.5% from last month
               </p>
-              <Button asChild className="transition-transform hover:scale-105">
-                <Link to="/create-page">
-                  <Plus className="mr-2 h-4 w-4" /> Create Landing Page
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Conversion Rate
+              </CardTitle>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                className="h-4 w-4 text-muted-foreground"
+              >
+                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+              </svg>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">18.2%</div>
+              <p className="text-xs text-muted-foreground">
+                +2.1% from last month
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Active Pages</CardTitle>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                className="h-4 w-4 text-muted-foreground"
+              >
+                <rect width="20" height="14" x="2" y="5" rx="2" />
+                <path d="M2 10h20" />
+              </svg>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">12</div>
+              <p className="text-xs text-muted-foreground">
+                +3 since last month
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Avg. Time on Page
+              </CardTitle>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                className="h-4 w-4 text-muted-foreground"
+              >
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+              </svg>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">1m 42s</div>
+              <p className="text-xs text-muted-foreground">
+                +12s from last month
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Recent Pages Section */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+          {/* Recent Pages */}
+          <Card className="col-span-full md:col-span-7 glassmorphic-card shadow-lg">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div className="space-y-0.5">
+                <CardTitle className="text-xl">Recent Pages</CardTitle>
+                <CardDescription>
+                  Your most recently created landing pages
+                </CardDescription>
+              </div>
+              <Link to="/pages" className="text-primary hover:underline text-sm flex items-center">
+                View all
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Link>
+            </CardHeader>
+            <CardContent>
+              <div className="mb-4">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="search"
+                    placeholder="Search pages..."
+                    className="pl-8 w-full"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="rounded-md border overflow-hidden">
+                <div className="relative w-full overflow-auto max-h-[400px]">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Title</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Visitors</TableHead>
+                        <TableHead className="text-right">Conversion</TableHead>
+                        <TableHead className="text-right">
+                          <div className="flex items-center justify-end">
+                            Created
+                            <Button variant="ghost" className="ml-1 p-0 h-auto">
+                              <ArrowUpDown className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredPages.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                            No pages found matching your search
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        filteredPages.map((page, index) => (
+                          <TableRow
+                            key={index}
+                            className="hover:bg-primary/5 transition-colors cursor-pointer"
+                          >
+                            <TableCell className="font-medium">
+                              <Link to={`/pages/${page.id}/metrics`} className="hover:text-primary hover:underline flex items-center">
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  className="mr-2 h-4 w-4 text-muted-foreground"
+                                >
+                                  <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
+                                  <path d="M14 2v4a2 2 0 0 0 2 2h4" />
+                                  <path d="M10 9H8" />
+                                  <path d="M16 13H8" />
+                                  <path d="M16 17H8" />
+                                </svg>
+                                {page.title}
+                              </Link>
+                            </TableCell>
+                            <TableCell>
+                              <Badge className="transition-colors">
+                                {page.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">{page.visitors}</TableCell>
+                            <TableCell className="text-right">{(page.conversionRate * 100).toFixed(2)}%</TableCell>
+                            <TableCell className="text-right">
+                              {page.createdAt.toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric'
+                              })}
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Quick Actions */}
+          <Card className="col-span-full md:col-span-5">
+            <CardHeader>
+              <CardTitle className="text-xl">Quick Actions</CardTitle>
+              <CardDescription>Get started with these common tasks</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-4">
+              <Button asChild className="w-full justify-start" variant="outline">
+                <Link to="/create-page" className="flex items-center">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="mr-2 h-4 w-4"
+                  >
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                  Create New Landing Page
                 </Link>
               </Button>
+              <Button asChild className="w-full justify-start" variant="outline">
+                <Link to="/pages" className="flex items-center">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="mr-2 h-4 w-4"
+                  >
+                    <rect width="7" height="7" x="3" y="3" rx="1" />
+                    <rect width="7" height="7" x="14" y="3" rx="1" />
+                    <rect width="7" height="7" x="14" y="14" rx="1" />
+                    <rect width="7" height="7" x="3" y="14" rx="1" />
+                  </svg>
+                  View All Landing Pages
+                </Link>
+              </Button>
+              <Button asChild className="w-full justify-start" variant="outline">
+                <Link to="/analytics" className="flex items-center">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="mr-2 h-4 w-4"
+                  >
+                    <path d="M3 3v18h18" />
+                    <path d="m19 9-5 5-4-4-3 3" />
+                  </svg>
+                  View Analytics
+                </Link>
+              </Button>
+              <Button asChild className="w-full justify-start" variant="outline">
+                <Link to="/settings" className="flex items-center">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="mr-2 h-4 w-4"
+                  >
+                    <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                  Account Settings
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Recent Activity */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl">Recent Activity</CardTitle>
+            <CardDescription>Your latest actions and updates</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center">
+                <div className="mr-4 rounded-full bg-primary/10 p-2">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-4 w-4 text-primary"
+                  >
+                    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+                    <polyline points="14 2 14 8 20 8" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium">Created new landing page</p>
+                  <p className="text-xs text-muted-foreground">AI Workshop</p>
+                </div>
+                <div className="text-xs text-muted-foreground">2 hours ago</div>
+              </div>
+              <div className="flex items-center">
+                <div className="mr-4 rounded-full bg-primary/10 p-2">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-4 w-4 text-primary"
+                  >
+                    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+                    <polyline points="14 2 14 8 20 8" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium">Updated landing page</p>
+                  <p className="text-xs text-muted-foreground">Product Launch</p>
+                </div>
+                <div className="text-xs text-muted-foreground">Yesterday</div>
+              </div>
+              <div className="flex items-center">
+                <div className="mr-4 rounded-full bg-primary/10 p-2">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-4 w-4 text-primary"
+                  >
+                    <rect width="18" height="18" x="3" y="3" rx="2" />
+                    <path d="M3 9h18" />
+                    <path d="M9 21V9" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium">Viewed analytics</p>
+                  <p className="text-xs text-muted-foreground">Monthly report</p>
+                </div>
+                <div className="text-xs text-muted-foreground">3 days ago</div>
+              </div>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     </Layout>
   );
 };
