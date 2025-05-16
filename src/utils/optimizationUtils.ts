@@ -99,6 +99,113 @@ export const republishOptimizedPage = async (
   }
 };
 
+// Get immediate optimization with traffic reach estimate
+export const getImmediateOptimization = (
+  htmlContent: string, 
+  pageInfo: { 
+    title: string; 
+    audience: string; 
+    industry: string; 
+    campaign_type: string; 
+    keywords: string[];
+  }
+): { 
+  optimizedHtml: string; 
+  trafficReachEstimate: { 
+    before: string; 
+    after: string; 
+    improvement: string; 
+    confidence: string;
+  } 
+} => {
+  // This function would normally call an AI service for optimization
+  // For demo purposes, we'll simulate optimization by enhancing the HTML
+  
+  const optimizedHtml = enhanceHtmlContent(htmlContent, pageInfo);
+  
+  // Generate a traffic reach estimate
+  const trafficReachEstimate = {
+    before: "35%",
+    after: "67%",
+    improvement: "91%",
+    confidence: "high"
+  };
+  
+  return {
+    optimizedHtml,
+    trafficReachEstimate
+  };
+};
+
+// Helper function to enhance HTML content for demo purposes
+function enhanceHtmlContent(htmlContent: string, pageInfo: any): string {
+  if (!htmlContent) return '';
+  
+  // Add optimization meta tag for demo
+  let optimizedHtml = htmlContent.replace('</head>', 
+    `<meta name="ai-optimized" content="true">
+     <meta name="optimization-date" content="${new Date().toISOString()}">
+     </head>`);
+  
+  // Enhance title and headlines based on industry and audience
+  const titleRegex = /<h1[^>]*>(.*?)<\/h1>/g;
+  optimizedHtml = optimizedHtml.replace(titleRegex, (match, title) => {
+    return match.replace(title, `${pageInfo.industry} Excellence: Transform Your ${pageInfo.audience}'s Experience Today!`);
+  });
+  
+  // Enhance CTA buttons for better conversion
+  const ctaRegex = /<button[^>]*>(.*?)<\/button>/g;
+  optimizedHtml = optimizedHtml.replace(ctaRegex, (match, buttonText) => {
+    if (buttonText.toLowerCase().includes('sign') || 
+        buttonText.toLowerCase().includes('submit') || 
+        buttonText.toLowerCase().includes('start')) {
+      return match.replace(buttonText, `Start Your ${pageInfo.industry} Journey`);
+    }
+    return match;
+  });
+  
+  // Add social proof and testimonials section if not present
+  if (!optimizedHtml.includes('testimonial') && !optimizedHtml.includes('Testimonial')) {
+    const testimonialSection = `
+      <section class="testimonials py-5 bg-light">
+        <div class="container">
+          <h2 class="text-center mb-4">What Our Clients Say</h2>
+          <div class="row">
+            <div class="col-md-4">
+              <div class="card mb-4">
+                <div class="card-body">
+                  <p class="card-text">"This ${pageInfo.industry} solution transformed our business. We saw a 45% increase in conversion rates within the first month."</p>
+                  <footer class="blockquote-footer">John D., CEO at ${pageInfo.audience} Solutions</footer>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="card mb-4">
+                <div class="card-body">
+                  <p class="card-text">"The team's expertise in ${pageInfo.industry} helped us navigate complex challenges and achieve remarkable results."</p>
+                  <footer class="blockquote-footer">Sarah M., Director at Global ${pageInfo.audience}</footer>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="card mb-4">
+                <div class="card-body">
+                  <p class="card-text">"I can't recommend this ${pageInfo.campaign_type} solution enough. It's been a game-changer for our organization."</p>
+                  <footer class="blockquote-footer">Michael T., ${pageInfo.audience} Specialist</footer>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    `;
+    
+    optimizedHtml = optimizedHtml.replace('</body>', `${testimonialSection}\n</body>`);
+  }
+  
+  return optimizedHtml;
+}
+
 // Mock data generation for the demo
 export const generateMockSuggestions = (
   htmlContent: string, 
@@ -146,21 +253,18 @@ export const generateMockSuggestions = (
         relevance: "high",
         trafficPotential: "15,000/month",
         difficulty: "35",
-        // Remove the suggested_placement property as it's not in the interface
       },
       {
         keyword: `${industry} for ${audience}`,
         relevance: "high",
         trafficPotential: "8,200/month",
         difficulty: "42",
-        // Remove the suggested_placement property as it's not in the interface
       },
       {
         keyword: "increase efficiency",
         relevance: "medium",
         trafficPotential: "5,400/month",
         difficulty: "28",
-        // Remove the suggested_placement property as it's not in the interface
       }
     ],
     structure: [
