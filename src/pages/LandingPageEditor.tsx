@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -14,7 +13,8 @@ import {
   Upload,
   Code,
   PanelLeft,
-  Sparkles
+  Sparkles,
+  ExternalLink
 } from "lucide-react";
 import {
   Card,
@@ -198,6 +198,14 @@ const LandingPageEditor = () => {
     );
   }
 
+  const openPageInNewTab = () => {
+    if (page?.published_url) {
+      window.open(page.published_url, '_blank', 'noopener,noreferrer');
+    } else {
+      toast.error("This page has not been published yet");
+    }
+  };
+
   return (
     <Layout title={`Editing: ${page?.title || ''}`}>
       <div className="space-y-4">
@@ -264,6 +272,16 @@ const LandingPageEditor = () => {
               )}
               {page.published_at ? "Update" : "Publish"}
             </Button>
+            
+            {page.published_url && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={openPageInNewTab}
+              >
+                <ExternalLink className="mr-2 h-4 w-4" /> Open
+              </Button>
+            )}
           </div>
         </div>
         

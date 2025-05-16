@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, Sparkles, RefreshCw, LineChart, LayoutGrid, X, TrendingUp, Search } from "lucide-react";
+import { Loader2, Sparkles, RefreshCw, LineChart, LayoutGrid, X, TrendingUp, Search, CheckCircle, ChevronRight } from "lucide-react";
 import OptimizationPanel from "./OptimizationPanel";
 import AdPreviewPanel from "./AdPreviewPanel";
 import { 
@@ -31,6 +31,18 @@ interface DynamicLandingPageOptimizerProps {
   onApplyChanges: (updatedHtml: string) => void;
 }
 
+interface OptimizationSuggestion {
+  id: number;
+  title: string;
+  description: string;
+  trafficPotential: number;
+  keywords: string[];
+  changes: {
+    content: string[];
+    design: string[];
+  };
+}
+
 const DynamicLandingPageOptimizer: React.FC<DynamicLandingPageOptimizerProps> = ({
   htmlContent,
   pageInfo,
@@ -51,6 +63,10 @@ const DynamicLandingPageOptimizer: React.FC<DynamicLandingPageOptimizerProps> = 
   // Generate multiple suggestions
   const [allOptimizationSuggestions, setAllOptimizationSuggestions] = useState<PageOptimizationSuggestion[]>([]);
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState<number>(0);
+  
+  // Concise suggestions
+  const [conciseSuggestions, setConciseSuggestions] = useState<OptimizationSuggestion[]>([]);
+  const [selectedConciseSuggestionIndex, setSelectedConciseSuggestionIndex] = useState<number>(0);
   
   // Automatically generate optimizations when component mounts
   useEffect(() => {
@@ -83,6 +99,45 @@ const DynamicLandingPageOptimizer: React.FC<DynamicLandingPageOptimizerProps> = 
         setSuggestionHistory([...suggestionHistory, optimizationSuggestions]);
       }
       
+      // Generate concise suggestions based on the optimization results
+      const newConciseSuggestions: OptimizationSuggestion[] = [
+        {
+          id: 1,
+          title: "High Traffic Optimization",
+          description: "Maximize search visibility with high-volume keywords and SEO-optimized content structure",
+          trafficPotential: 85,
+          keywords: allSuggestions[0].keywords?.slice(0, 5).map(k => k.keyword) || [],
+          changes: {
+            content: ["Optimized headline structure", "SEO-focused content blocks", "Conversion-oriented CTA placement"],
+            design: ["High contrast CTA buttons", "Social proof elements", "Streamlined navigation"]
+          }
+        },
+        {
+          id: 2,
+          title: "Conversion Focused",
+          description: "Boost conversion rates with persuasive copy and strategic call-to-action placement",
+          trafficPotential: 72,
+          keywords: allSuggestions[1].keywords?.slice(0, 5).map(k => k.keyword) || [],
+          changes: {
+            content: ["Benefit-driven headlines", "Problem-solution structure", "Testimonial integration"],
+            design: ["Simplified form fields", "Trust indicators", "Directional cues to CTA"]
+          }
+        },
+        {
+          id: 3,
+          title: "Brand Authority",
+          description: "Build credibility and thought leadership with industry-specific content strategy",
+          trafficPotential: 68,
+          keywords: allSuggestions[2].keywords?.slice(0, 5).map(k => k.keyword) || [],
+          changes: {
+            content: ["Educational content blocks", "Expert quote integration", "Industry statistics"],
+            design: ["Professional color palette", "Data visualization elements", "Featured case studies"]
+          }
+        }
+      ];
+      
+      setConciseSuggestions(newConciseSuggestions);
+      
       toast.success("Generated optimization suggestions!");
     } catch (error) {
       console.error("Error generating optimizations:", error);
@@ -94,6 +149,21 @@ const DynamicLandingPageOptimizer: React.FC<DynamicLandingPageOptimizerProps> = 
         setOptimizationSuggestions(suggestion);
         setAllOptimizationSuggestions([suggestion]);
         setSelectedSuggestionIndex(0);
+        
+        // Create fallback concise suggestions
+        setConciseSuggestions([
+          {
+            id: 1,
+            title: "Basic SEO Optimization",
+            description: "Improve search visibility with keyword optimization",
+            trafficPotential: 65,
+            keywords: suggestion.keywords?.slice(0, 5).map(k => k.keyword) || [],
+            changes: {
+              content: ["SEO-optimized headlines", "Keyword-rich content", "Meta description updates"],
+              design: ["Improved readability", "Mobile responsiveness", "Faster loading"]
+            }
+          }
+        ]);
       } catch (fallbackError) {
         console.error("Fallback error:", fallbackError);
       }
@@ -130,6 +200,7 @@ const DynamicLandingPageOptimizer: React.FC<DynamicLandingPageOptimizerProps> = 
   const handleSelectSuggestion = (index: number) => {
     setSelectedSuggestionIndex(index);
     setOptimizationSuggestions(allOptimizationSuggestions[index]);
+    setSelectedConciseSuggestionIndex(index);
   };
   
   const handleSelectFromHistory = (index: number) => {
@@ -187,6 +258,95 @@ const DynamicLandingPageOptimizer: React.FC<DynamicLandingPageOptimizerProps> = 
     );
   };
 
+  // Render concise suggestions
+  const renderConciseSuggestions = () => {
+    return (
+      <div className="space-y-4 mt-4">
+        <h3 className="text-lg font-semibold mb-2">Optimization Strategies</h3>
+        <div className="grid grid-cols-1 gap-4">
+          {conciseSuggestions.map((suggestion, idx) => (
+            <Card 
+              key={idx} 
+              className={`cursor-pointer transition-all hover:shadow-md ${
+                selectedConciseSuggestionIndex === idx ? 'ring-2 ring-primary' : ''
+              }`}
+              onClick={() => handleSelectSuggestion(idx)}
+            >
+              <CardHeader className="pb-2">
+                <div className="flex justify-between items-center">
+                  <CardTitle className="text-lg">{suggestion.title}</CardTitle>
+                  <Badge variant="default" className="text-xs">
+                    {suggestion.trafficPotential}% Traffic
+                  </Badge>
+                </div>
+                <CardDescription>{suggestion.description}</CardDescription>
+              </CardHeader>
+              
+              <CardContent className="pb-2">
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-sm font-medium mb-1">Top Keywords</p>
+                    <div className="flex flex-wrap gap-1">
+                      {suggestion.keywords.slice(0, 4).map((keyword, kidx) => (
+                        <Badge key={kidx} variant="outline" className="text-xs">
+                          {keyword}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <Progress
+                    value={suggestion.trafficPotential}
+                    className="h-2"
+                  />
+                  
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <p className="font-medium text-xs mb-1">Content Changes</p>
+                      <ul className="text-xs text-muted-foreground space-y-1">
+                        {suggestion.changes.content.slice(0, 3).map((change, cidx) => (
+                          <li key={cidx} className="flex items-start">
+                            <ChevronRight className="h-3 w-3 mr-1 flex-shrink-0 mt-0.5" />
+                            <span>{change}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <p className="font-medium text-xs mb-1">Design Changes</p>
+                      <ul className="text-xs text-muted-foreground space-y-1">
+                        {suggestion.changes.design.slice(0, 3).map((change, didx) => (
+                          <li key={didx} className="flex items-start">
+                            <ChevronRight className="h-3 w-3 mr-1 flex-shrink-0 mt-0.5" />
+                            <span>{change}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+              
+              <CardFooter className="pt-0">
+                <Button 
+                  variant={selectedConciseSuggestionIndex === idx ? "default" : "outline"} 
+                  size="sm" 
+                  className="w-full"
+                >
+                  {selectedConciseSuggestionIndex === idx ? (
+                    <>
+                      <CheckCircle className="h-4 w-4 mr-2" /> Selected
+                    </>
+                  ) : "Select Strategy"}
+                </Button>
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       {/* Sticky Header */}
@@ -207,16 +367,6 @@ const DynamicLandingPageOptimizer: React.FC<DynamicLandingPageOptimizerProps> = 
       <div className="flex flex-1 overflow-hidden">
         {/* Left: Suggestions and Controls */}
         <div className="w-full md:w-1/3 flex flex-col h-full overflow-y-auto p-6 gap-6">
-          {/* Theme/Layout Switcher */}
-          <div className="mb-2">
-            <div className="font-semibold mb-2">Theme/Layout</div>
-            <div className="flex gap-2 overflow-x-auto pb-2">
-              {/* Theme/layout thumbnails */}
-              <div className="w-24 h-16 bg-muted rounded border flex items-center justify-center text-xs cursor-pointer hover:ring-2 ring-primary transition">Theme 1</div>
-              <div className="w-24 h-16 bg-muted rounded border flex items-center justify-center text-xs cursor-pointer hover:ring-2 ring-primary transition">Theme 2</div>
-              <div className="w-24 h-16 bg-muted rounded border flex items-center justify-center text-xs cursor-pointer hover:ring-2 ring-primary transition">Theme 3</div>
-            </div>
-          </div>
           {/* Generate Suggestions Button */}
           <Button
             variant="default"
@@ -227,20 +377,22 @@ const DynamicLandingPageOptimizer: React.FC<DynamicLandingPageOptimizerProps> = 
             {isLoadingOptimizations ? "Analyzing Page..." : "Generate Optimization Suggestions"}
           </Button>
           
+          {/* Display concise suggestions */}
+          {isLoadingOptimizations ? (
+            <div className="text-center py-6">
+              <Loader2 className="h-8 w-8 mx-auto animate-spin text-primary mb-2" />
+              <p>Generating optimization strategies...</p>
+            </div>
+          ) : conciseSuggestions.length > 0 ? (
+            renderConciseSuggestions()
+          ) : (
+            <div className="text-center py-6 border rounded-md bg-muted/20">
+              <p className="text-muted-foreground">Click the button above to generate optimization strategies</p>
+            </div>
+          )}
+          
           {/* Display keyword traffic analysis */}
           {renderKeywordsWithTraffic()}
-          
-          {/* AI Suggestions, grouped by type */}
-          <div className="space-y-6">
-            <OptimizationPanel
-              optimizationSuggestions={optimizationSuggestions}
-              isLoading={isLoadingOptimizations}
-              originalHtml={htmlContent}
-              onApplySuggestion={handleApplySuggestion}
-              suggestionHistory={showVersionHistory ? suggestionHistory : undefined}
-              onSelectFromHistory={showVersionHistory ? handleSelectFromHistory : undefined}
-            />
-          </div>
         </div>
         {/* Right: Live Mobile Preview */}
         <div className="hidden md:flex w-2/3 h-full bg-muted/10 p-8 items-center justify-center overflow-y-auto">
