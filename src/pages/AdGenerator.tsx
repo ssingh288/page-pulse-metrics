@@ -14,13 +14,10 @@ const AdGeneratorPage = () => {
   const [pageContent, setPageContent] = useState("");
   const [formValues, setFormValues] = useState<LandingPageFormValues>({
     title: "",
-    description: "",
     audience: "",
     industry: "",
     campaign_type: "",
-    keywords: "",
-    template: "standard",
-    features: []
+    keywords: ""
   });
 
   useEffect(() => {
@@ -45,13 +42,10 @@ const AdGeneratorPage = () => {
           // Set form values from page data
           setFormValues({
             title: pageData.title || "",
-            description: pageData.description || "",
             audience: pageData.audience || "",
             industry: pageData.industry || "",
             campaign_type: pageData.campaign_type || "",
-            keywords: pageData.keywords || "",
-            template: pageData.template || "standard",
-            features: pageData.features || []
+            keywords: pageData.initial_keywords ? pageData.initial_keywords.join(', ') : ""
           });
         }
       } catch (error: any) {

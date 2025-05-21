@@ -99,6 +99,9 @@ export type LandingPageFormValues = {
   industry: string;
   audience: string;
   keywords: string;
+  template?: string;
+  features?: string[];
+  description?: string;
 };
 
 interface LandingPageFormProps {
