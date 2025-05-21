@@ -23,6 +23,7 @@ import NotFound from "./pages/NotFound";
 import Home from "./pages/Home";
 import AIOptimizer from "./pages/AIOptimizer";
 import ResetPassword from "./pages/ResetPassword";
+import AdGenerator from "./pages/AdGenerator";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +49,8 @@ const App = () => (
               <Route path="/pages/:id/metrics" element={<ProtectedRoute><PageMetrics /></ProtectedRoute>} />
               <Route path="/pages/:id/keywords" element={<ProtectedRoute><KeywordsManager /></ProtectedRoute>} />
               <Route path="/pages/:id/ai-optimize" element={<ProtectedRoute><AIOptimizer /></ProtectedRoute>} />
+              <Route path="/pages/ad-generator" element={<ProtectedRoute><AdGenerator /></ProtectedRoute>} />
+              <Route path="/pages/:id/ad-generator" element={<ProtectedRoute><AdGenerator /></ProtectedRoute>} />
               <Route path="/media" element={<ProtectedRoute><Media /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />

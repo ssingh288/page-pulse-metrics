@@ -14,7 +14,8 @@ import {
   User,
   LogOut,
   Sparkles,
-  Lightbulb
+  Lightbulb,
+  Share2
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
@@ -88,6 +89,12 @@ export function AppSidebar() {
           label="AI Insights"
           href="/pages/ai-insights"
           active={isActive("/pages/ai-insights")}
+        />
+        <NavItem
+          icon={Share2}
+          label="Ad Generator"
+          href="/pages/ad-generator"
+          active={isActive("/pages/ad-generator")}
         />
       </div>
       
