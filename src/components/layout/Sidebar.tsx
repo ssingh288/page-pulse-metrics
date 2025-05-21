@@ -90,12 +90,6 @@ export function AppSidebar() {
           href="/pages/ai-insights"
           active={isActive("/pages/ai-insights")}
         />
-        <NavItem
-          icon={Share2}
-          label="Ad Generator"
-          href="/pages/ad-generator"
-          active={isActive("/pages/ad-generator")}
-        />
       </div>
       
       <Separator className="my-4" />

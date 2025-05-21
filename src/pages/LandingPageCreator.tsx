@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { toast } from "sonner";
@@ -10,10 +9,11 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import { FileText, Image, Sun, Moon, Trophy, User, Sparkles } from "lucide-react";
+import { FileText, Image, Sun, Moon, Trophy, User, Sparkles, Share2 } from "lucide-react";
 import { LandingPageForm, LandingPageFormValues } from "@/components/landing-page/LandingPageForm";
 import { LandingPagePreview } from "@/components/landing-page/LandingPagePreview";
 import { AIOptimizationTab } from "@/components/landing-page/AIOptimizationTab";
+import { AdGenerator } from "@/components/ad-generator/AdGenerator";
 import { ThemeOption } from "@/utils/landingPageGenerator";
 import {
   LandingPageData,
@@ -61,8 +61,14 @@ const LandingPageCreator = () => {
   const { theme, setTheme } = useTheme();
   const [achievements, setAchievements] = useState<string[]>([]);
   const [keywordSuggestions, setKeywordSuggestions] = useState<string[]>([]);
-  const steps = ["Form", "Preview", "Optimize"];
-  const currentStep = activeTab === "form" ? 0 : activeTab === "preview" ? 1 : 2;
+  const steps = ["Form", "Preview", "Optimize", "Ad Generator"];
+  const currentStep = activeTab === "form" 
+    ? 0 
+    : activeTab === "preview" 
+    ? 1 
+    : activeTab === "optimize" 
+    ? 2 
+    : 3;
   
   // Auto-save draft periodically
   useEffect(() => {
@@ -407,10 +413,14 @@ const LandingPageCreator = () => {
       <Card className="glassmorphic-card shadow-2xl border-0 bg-white/80 backdrop-blur-lg rounded-2xl">
         <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/10 rounded-t-2xl">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid grid-cols-3 w-full mb-4 rounded-xl">
+            <TabsList className="grid grid-cols-4 w-full mb-4 rounded-xl">
               <TabsTrigger value="form" className="text-lg font-semibold transition-colors hover:bg-primary/10">Form</TabsTrigger>
               <TabsTrigger value="preview" className="text-lg font-semibold transition-colors hover:bg-primary/10">Preview</TabsTrigger>
               <TabsTrigger value="optimize" className="text-lg font-semibold transition-colors hover:bg-primary/10">AI Optimize</TabsTrigger>
+              <TabsTrigger value="ads" className="text-lg font-semibold transition-colors hover:bg-primary/10 flex items-center gap-1">
+                <Share2 className="h-4 w-4" />
+                <span>Ad Generator</span>
+              </TabsTrigger>
             </TabsList>
           </Tabs>
         </CardHeader>
@@ -462,6 +472,14 @@ const LandingPageCreator = () => {
                 keywordSuggestions={keywordSuggestions}
                 onAddKeyword={handleAddKeyword}
                 onRemoveKeyword={handleRemoveKeyword}
+              />
+            </div>
+          )}
+          {activeTab === "ads" && (
+            <div className="p-4">
+              <AdGenerator
+                formValues={formValues}
+                pageContent={previewHtml}
               />
             </div>
           )}

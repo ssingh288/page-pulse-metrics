@@ -1,10 +1,9 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, ExternalLink, Share2, Facebook, Linkedin, Instagram, Twitter } from "lucide-react";
+import { Loader2, Share2, Facebook, Linkedin, Instagram, Twitter } from "lucide-react";
 import { toast } from "sonner";
 import { generateAdSuggestions, AdSuggestion } from "@/utils/aiService";
 import { LandingPageFormValues } from "@/components/landing-page/LandingPageForm";
@@ -192,7 +191,7 @@ export const AdGenerator: React.FC<AdGeneratorProps> = ({ formValues, pageConten
         </h2>
         <Button 
           onClick={handleGenerateAds} 
-          disabled={isGenerating}
+          disabled={isGenerating || !pageContent}
         >
           {isGenerating ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -219,15 +218,20 @@ export const AdGenerator: React.FC<AdGeneratorProps> = ({ formValues, pageConten
             <Share2 className="h-12 w-12 text-primary mb-4" />
             <h3 className="text-lg font-medium mb-2">Generate Social Media Ads</h3>
             <p className="text-center text-muted-foreground max-w-md">
-              Create platform-specific ad variations for Facebook, Instagram, LinkedIn, Twitter, and Google based on your landing page content.
+              {!pageContent 
+                ? "Please create a landing page preview first by filling out and submitting the form."
+                : "Create platform-specific ad variations for Facebook, Instagram, LinkedIn, Twitter, and Google based on your landing page content."
+              }
             </p>
-            <Button 
-              className="mt-6"
-              onClick={handleGenerateAds}
-            >
-              <Share2 className="h-4 w-4 mr-2" />
-              Generate Ads
-            </Button>
+            {pageContent && (
+              <Button 
+                className="mt-6"
+                onClick={handleGenerateAds}
+              >
+                <Share2 className="h-4 w-4 mr-2" />
+                Generate Ads
+              </Button>
+            )}
           </div>
         </Card>
       ) : (
@@ -295,27 +299,27 @@ export const AdGenerator: React.FC<AdGeneratorProps> = ({ formValues, pageConten
                     <div>
                       <p className="font-semibold mb-1">Headline</p>
                       <div className="bg-muted p-2 rounded">
-                        {adSuggestions.facebook?.headline}
+                        {adSuggestions?.facebook?.headline}
                       </div>
                       <Badge className="mt-1">90 characters max</Badge>
                     </div>
                     <div>
                       <p className="font-semibold mb-1">Primary Text</p>
                       <div className="bg-muted p-2 rounded">
-                        {adSuggestions.facebook?.primary_text}
+                        {adSuggestions?.facebook?.primary_text}
                       </div>
                       <Badge className="mt-1">125 characters recommended</Badge>
                     </div>
                     <div>
                       <p className="font-semibold mb-1">Description</p>
                       <div className="bg-muted p-2 rounded">
-                        {adSuggestions.facebook?.description}
+                        {adSuggestions?.facebook?.description}
                       </div>
                     </div>
                     <div>
                       <p className="font-semibold mb-1">CTA Button</p>
                       <div className="bg-muted p-2 rounded">
-                        {adSuggestions.facebook?.cta}
+                        {adSuggestions?.facebook?.cta}
                       </div>
                     </div>
                   </TabsContent>
