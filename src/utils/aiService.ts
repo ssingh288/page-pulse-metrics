@@ -67,6 +67,10 @@ export interface AdSuggestion {
     description1: string;
     description2: string;
   };
+  whatsapp?: {
+    message: string;
+    status?: string;
+  };
 }
 
 export interface ContentSynthesis {
@@ -307,6 +311,10 @@ export const generateAdSuggestions = async (
         headline3: "Start Free 14-Day Trial",
         description1: "Join 10,000+ businesses using our proven platform to increase their website conversions.",
         description2: "No credit card required. See results in your first week or your money back.",
+      },
+      whatsapp: {
+        message: "Try our platform for instant results!",
+        status: "approved"
       }
     };
   }

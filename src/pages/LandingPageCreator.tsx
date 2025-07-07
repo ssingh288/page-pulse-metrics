@@ -34,6 +34,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 const LandingPageCreator = () => {
   const [generatingPage, setGeneratingPage] = useState(false);
@@ -69,6 +70,8 @@ const LandingPageCreator = () => {
     : activeTab === "optimize" 
     ? 2 
     : 3;
+  const [showAdPrompt, setShowAdPrompt] = useState(false);
+  const [newPageId, setNewPageId] = useState<string | null>(null);
   
   // Auto-save draft periodically
   useEffect(() => {
@@ -177,6 +180,7 @@ const LandingPageCreator = () => {
       
       // Update last saved timestamp
       setLastSaved(new Date());
+      return result;
     } finally {
       setAutoSaving(false);
     }
@@ -204,7 +208,7 @@ const LandingPageCreator = () => {
       // Generate landing page content
       generateLandingPageFromValues({
         formValues: values,
-        onSuccess: (html, content, themes) => {
+        onSuccess: async (html, content, themes) => {
           setPreviewHtml(html);
           setGeneratedContent(content);
           setThemeOptions(themes);
@@ -218,8 +222,12 @@ const LandingPageCreator = () => {
             );
           }
           
-          // Auto save the draft with the preview content
-          autoSaveDraft(values);
+          // Auto save the draft with the preview content and get the real ID
+          const draftResult = await autoSaveDraft(values);
+          if (draftResult && draftResult.success && draftResult.id) {
+            setNewPageId(draftResult.id);
+            setShowAdPrompt(true);
+          }
         },
         onError: (error) => {
           toast.error(`Error generating page: ${error.message}`);
@@ -485,6 +493,25 @@ const LandingPageCreator = () => {
           )}
         </CardContent>
       </Card>
+      <Dialog open={showAdPrompt} onOpenChange={setShowAdPrompt}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Generate Ads for Your New Landing Page?</DialogTitle>
+          </DialogHeader>
+          <p className="mb-4">Would you like to instantly generate ads for your new landing page using AI?</p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAdPrompt(false)}>No, Thanks</Button>
+            <Button
+              onClick={() => {
+                setShowAdPrompt(false);
+                if (newPageId) navigate(`/adgenerator/${newPageId}`);
+              }}
+            >
+              Yes, Generate Ads
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 };

@@ -10,50 +10,92 @@ import { PageTable, PageData } from "@/components/dashboard/PageTable";
 import { ChevronRight, ArrowUpDown } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { FlyerCreator } from "@/components/ad-generator/FlyerCreator";
 
 // Sample data for recent pages
 const recentPages = [
   {
     id: "94371989-eb8b-46a8-bb32-f8bff59434dc",
-    title: "AI workshop",
-    status: "draft",
+    name: "AI workshop",
+    status: "draft" as const,
     visitors: 699,
     conversionRate: 0.2389,
     createdAt: new Date("2025-05-14"),
   },
   {
     id: "ccf99145-b27f-4403-873d-29750a6dba28",
-    title: "AI workshop",
-    status: "draft",
+    name: "AI workshop",
+    status: "draft" as const,
     visitors: 968,
     conversionRate: 0.2696,
     createdAt: new Date("2025-05-14"),
   },
   {
     id: "74217ec6-f6a7-4529-96ce-7b77066905e0",
-    title: "AI workshop",
-    status: "draft",
+    name: "AI workshop",
+    status: "draft" as const,
     visitors: 868,
     conversionRate: 0.2143,
     createdAt: new Date("2025-05-14"),
   },
   {
     id: "a6443eed-562d-4f42-b5ab-9271e3f63ecb",
-    title: "AI workshop",
-    status: "draft",
+    name: "AI workshop",
+    status: "draft" as const,
     visitors: 625,
     conversionRate: 0.1536,
     createdAt: new Date("2025-05-14"),
   },
   {
     id: "a143723a-9fca-4643-853e-c06d3e7effac",
-    title: "AI workshop",
-    status: "draft",
+    name: "AI workshop",
+    status: "draft" as const,
     visitors: 671,
     conversionRate: 0.0775,
     createdAt: new Date("2025-05-14"),
   },
 ];
+
+const SatisfactionFeedback = ({ page }: { page: PageData }) => {
+  const [satisfied, setSatisfied] = useState<null | boolean>(null);
+  const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleGetSuggestion = async () => {
+    setLoading(true);
+    // Stub: Replace with real AI call
+    setTimeout(() => {
+      setAiSuggestion("Try updating your headline and adding a stronger call-to-action to improve conversions.");
+      setLoading(false);
+    }, 1200);
+  };
+
+  return (
+    <div className="border rounded p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+      <div>
+        <span className="font-medium">{page.name}</span>
+        <span className="ml-2 text-xs text-muted-foreground">({(page.conversionRate * 100).toFixed(2)}% conversion)</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <span>Are you satisfied?</span>
+        <Button size="sm" variant={satisfied === true ? "default" : "outline"} onClick={() => setSatisfied(true)}>
+          Yes
+        </Button>
+        <Button size="sm" variant={satisfied === false ? "destructive" : "outline"} onClick={() => setSatisfied(false)}>
+          No
+        </Button>
+        {!satisfied && (
+          <Button size="sm" variant="secondary" onClick={handleGetSuggestion} disabled={loading}>
+            {loading ? "Getting AI Suggestion..." : "Get AI Suggestion"}
+          </Button>
+        )}
+      </div>
+      {aiSuggestion && (
+        <div className="mt-2 text-sm text-blue-700 bg-blue-50 rounded p-2 w-full md:w-auto">{aiSuggestion}</div>
+      )}
+    </div>
+  );
+};
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -61,7 +103,7 @@ const Dashboard = () => {
   
   // Add filtering function for landing pages
   const filteredPages = recentPages.filter(page => 
-    page.title.toLowerCase().includes(searchTerm.toLowerCase())
+    page.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -180,6 +222,75 @@ const Dashboard = () => {
           </Card>
         </div>
 
+        {/* Add Advertisement Metrics section after stats overview and before recent pages */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mt-8">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Ad Reach</CardTitle>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" className="h-4 w-4 text-muted-foreground"><circle cx="12" cy="12" r="10" /><path d="M8 12h8" /><path d="M12 8v8" /></svg>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">8,200</div>
+              <p className="text-xs text-muted-foreground">+18% from last month</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Ad Engagement</CardTitle>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" className="h-4 w-4 text-muted-foreground"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2z" /></svg>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">1,540</div>
+              <p className="text-xs text-muted-foreground">+9% from last month</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Ad CTR</CardTitle>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" className="h-4 w-4 text-muted-foreground"><path d="M12 19V5M5 12h14" /></svg>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">3.2%</div>
+              <p className="text-xs text-muted-foreground">+0.4% from last month</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Ad Conversions</CardTitle>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" className="h-4 w-4 text-muted-foreground"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /></svg>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">420</div>
+              <p className="text-xs text-muted-foreground">+6% from last month</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* After Stats Overview, before Recent Pages Section */}
+        <div className="my-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Are you satisfied with your landing page results?</CardTitle>
+              <CardDescription>
+                Let us know if you are satisfied with the performance of your landing pages. If not, we can suggest AI-powered improvements!
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {filteredPages.length === 0 ? (
+                <p className="text-muted-foreground">No landing pages to review.</p>
+              ) : (
+                <div className="space-y-4">
+                  {filteredPages.map((page, idx) => (
+                    <SatisfactionFeedback key={page.id} page={page} />
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+        {/* Flyer Creator for WhatsApp/Hyper-local */}
+        <FlyerCreator />
+
         {/* Recent Pages Section */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
           {/* Recent Pages */}
@@ -260,7 +371,7 @@ const Dashboard = () => {
                                   <path d="M16 13H8" />
                                   <path d="M16 17H8" />
                                 </svg>
-                                {page.title}
+                                {page.name}
                               </Link>
                             </TableCell>
                             <TableCell>
