@@ -19,6 +19,12 @@ interface AIOptimizationTabProps {
   keywordSuggestions: string[];
   onAddKeyword: (keyword: string) => void;
   onRemoveKeyword: (keyword: string) => void;
+  onRegenerate: () => void; // <-- new prop
+  reach: number; // <-- new prop
+  potentialReach: number; // <-- new prop
+  setPreviewHtml: (html: string) => void;
+  setFormValues: (values: LandingPageFormValues) => void;
+  setActiveTab: (tab: string) => void;
 }
 
 export const AIOptimizationTab: React.FC<AIOptimizationTabProps> = ({
@@ -28,7 +34,14 @@ export const AIOptimizationTab: React.FC<AIOptimizationTabProps> = ({
   isGenerating,
   onUpdateGeneratingState,
   keywordSuggestions,
-  onAddKeyword
+  onAddKeyword,
+  onRemoveKeyword,
+  onRegenerate,
+  reach,
+  potentialReach,
+  setPreviewHtml,
+  setFormValues,
+  setActiveTab
 }) => {
   const [optimizedHtml, setOptimizedHtml] = useState("");
   const [trafficReachEstimate, setTrafficReachEstimate] = useState({
@@ -106,23 +119,6 @@ export const AIOptimizationTab: React.FC<AIOptimizationTabProps> = ({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold tracking-tight">AI Optimization</h2>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={handleGenerateOptimization}
-          disabled={isGenerating || !previewHtml}
-        >
-          {isGenerating ? (
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          ) : (
-            <Sparkles className="h-4 w-4 mr-2" />
-          )}
-          {isGenerating ? "Optimizing..." : "Regenerate"}
-        </Button>
-      </div>
-
       {isGenerating ? (
         <Card className="p-8">
           <div className="flex flex-col items-center justify-center h-[400px]">
@@ -206,58 +202,60 @@ export const AIOptimizationTab: React.FC<AIOptimizationTabProps> = ({
                 <iframe
                   title="Optimized Preview"
                   srcDoc={optimizedHtml}
-                  className="w-full h-[400px]"
+                  className="w-full h-[600px]"
                   style={{ border: 'none' }}
                 />
               </div>
-              
-              <div className="mt-4 flex justify-between items-center">
-                <Button 
-                  variant="outline" 
-                  onClick={openPreviewInNewTab}
-                  className="flex items-center gap-1"
-                >
-                  <ExternalLink className="h-4 w-4 mr-1" />
-                  Preview in new tab
-                </Button>
-                
-                <Button onClick={handleApplyOptimizations} className="flex items-center">
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  Apply Optimizations and preview
-                </Button>
+              {/* Move Regenerate button here, before Apply/Preview */}
+              <div className="mt-4 flex flex-col gap-2 items-end">
+                <div className="flex gap-2 mt-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={openPreviewInNewTab}
+                    className="flex items-center gap-1"
+                  >
+                    <ExternalLink className="h-4 w-4 mr-1" />
+                    Preview in new tab
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={onRegenerate}
+                    disabled={isGenerating}
+                    className="w-fit"
+                  >
+                    {isGenerating ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-4 w-4 mr-2" />
+                    )}
+                    {isGenerating ? "Regenerating..." : "Regenerate"}
+                  </Button>
+                  <Button onClick={handleApplyOptimizations} className="flex items-center">
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Apply Optimizations and preview
+                  </Button>
+                  {/* New: Preview Optimized Page */}
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      setPreviewHtml(optimizedHtml);
+                      setActiveTab('preview');
+                    }}
+                  >
+                    Preview Optimized Page
+                  </Button>
+                  {/* New: Edit Optimized Page */}
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      setFormValues({ ...formValues, ...parseOptimizedHtmlToFormValues(optimizedHtml) });
+                      setActiveTab('form');
+                    }}
+                  >
+                    Edit Optimized Page
+                  </Button>
+                </div>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Optimization Insights */}
-          <Card>
-            <CardHeader className="pb-2">
-              <Link to="/pages/ai-insights">
-                <CardTitle className="text-lg flex items-center gap-2 cursor-pointer hover:text-primary hover:underline transition-colors">
-                  <Lightbulb className="h-5 w-5 text-primary" />
-                  Optimization Insights
-                </CardTitle>
-              </Link>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2">
-                <li className="flex items-start">
-                  <Badge className="mr-2 mt-1">SEO</Badge>
-                  <span>Enhanced header structure and keyword placement for better search visibility</span>
-                </li>
-                <li className="flex items-start">
-                  <Badge className="mr-2 mt-1">Conversion</Badge>
-                  <span>Improved call-to-action elements and button placement for higher conversion rates</span>
-                </li>
-                <li className="flex items-start">
-                  <Badge className="mr-2 mt-1">Content</Badge>
-                  <span>Added persuasive copy and social proof elements to build trust</span>
-                </li>
-                <li className="flex items-start">
-                  <Badge className="mr-2 mt-1">UX</Badge>
-                  <span>Enhanced readability and content structure for better user experience</span>
-                </li>
-              </ul>
             </CardContent>
           </Card>
         </div>
@@ -265,3 +263,9 @@ export const AIOptimizationTab: React.FC<AIOptimizationTabProps> = ({
     </div>
   );
 };
+
+// Helper function (mock): parseOptimizedHtmlToFormValues
+function parseOptimizedHtmlToFormValues(html: string): Partial<LandingPageFormValues> {
+  // In a real app, parse the HTML to extract form values. Here, just return an empty object.
+  return {};
+}

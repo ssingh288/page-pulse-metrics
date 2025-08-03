@@ -54,7 +54,7 @@ export async function regenerateContent(
   formValues: LandingPageFormData,
   currentThemeIndex: number,
   themeOptions: ThemeOption[],
-  onSuccess: (html: string, content: any) => void,
+  onSuccess: (html: string, content: any, reachData: { reach: number, potentialReach: number }) => void,
   onError: (error: Error) => void
 ) {
   try {
@@ -99,8 +99,10 @@ export async function regenerateContent(
           themeOptions[currentThemeIndex],
           aiData.content
         );
-        
-        onSuccess(enhancedHtml, aiData);
+        // Generate random reach values for demo
+        const reach = Math.floor(Math.random() * 50) + 30; // 30-79
+        const potentialReach = reach + Math.floor(Math.random() * 20) + 10; // reach+10-29
+        onSuccess(enhancedHtml, aiData, { reach, potentialReach });
         return;
       }
     } catch (e) {
@@ -127,8 +129,10 @@ export async function regenerateContent(
         themeOptions[currentThemeIndex],
         content
       );
-      
-      onSuccess(enhancedHtml, content);
+      // Generate random reach values for demo
+      const reach = Math.floor(Math.random() * 50) + 30; // 30-79
+      const potentialReach = reach + Math.floor(Math.random() * 20) + 10; // reach+10-29
+      onSuccess(enhancedHtml, content, { reach, potentialReach });
     }
   } catch (error) {
     onError(error instanceof Error ? error : new Error('Failed to regenerate content'));

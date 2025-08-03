@@ -214,16 +214,7 @@ export function LandingPagePreview({
               <CardTitle className="text-lg">Page Controls</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Button 
-                variant="outline" 
-                className="w-full justify-start hover:bg-primary/5 transition-all"
-                onClick={onRegenerateContent}
-                disabled={isGenerating}
-              >
-                <FileText className="mr-2 h-4 w-4 text-primary" />
-                Generate High-Quality AI Content
-              </Button>
-              
+              {/* Removed Generate High-Quality AI Content button */}
               <Dialog open={openDesignDialog} onOpenChange={setOpenDesignDialog}>
                 <DialogTrigger asChild>
                   <Button 
@@ -305,45 +296,7 @@ export function LandingPagePreview({
               </Button>
             </CardContent>
           </Card>
-          
-          {/* Keywords Management Card */}
-          <Card className="shadow-sm">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Content Keywords</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Add keyword..." 
-                  value={newKeyword}
-                  onChange={(e) => setNewKeyword(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleAddKeyword()}
-                  className="flex-1"
-                />
-                <Button onClick={handleAddKeyword} size="sm">
-                  <PlusCircle className="h-4 w-4" />
-                </Button>
-              </div>
-              
-              <div className="flex flex-wrap gap-2 mt-3">
-                {keywordSuggestions.map((keyword, index) => (
-                  <div key={index} className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm flex items-center gap-1">
-                    {keyword}
-                    <button 
-                      onClick={() => onRemoveKeyword(keyword)} 
-                      className="ml-1 hover:bg-primary/20 rounded-full p-1"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-              
-              <div className="text-xs text-muted-foreground mt-1">
-                Adding relevant keywords helps AI generate more targeted content
-              </div>
-            </CardContent>
-          </Card>
+          {/* Removed Content Keywords card */}
         </div>
       </div>
 

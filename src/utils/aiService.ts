@@ -44,21 +44,25 @@ export interface AdSuggestion {
     description: string;
     cta: string;
     status?: string;
+    platform_summary?: string;
   };
   instagram?: {
     caption: string;
     hashtags: string;
     status?: string;
+    platform_summary?: string;
   };
   twitter?: {
     tweet_copy: string;
     hashtags: string;
     status?: string;
+    platform_summary?: string;
   };
   linkedin?: {
     headline: string;
     description: string;
     cta: string;
+    platform_summary?: string;
   };
   google?: {
     headline1: string;
@@ -66,10 +70,12 @@ export interface AdSuggestion {
     headline3: string;
     description1: string;
     description2: string;
+    platform_summary?: string;
   };
   whatsapp?: {
     message: string;
     status?: string;
+    platform_summary?: string;
   };
 }
 
@@ -267,7 +273,12 @@ export const generateAdSuggestions = async (
     Page Content:
     ${pageContent}
     
-    Please create optimal ad content for Facebook, Instagram, LinkedIn, Twitter and Google ads.
+    For each of the following platforms: Facebook, Instagram, LinkedIn, Twitter, Google, WhatsApp
+    - Create optimal ad content as usual (fields as before)
+    - For each platform, provide a field called 'platform_summary' with a 30-50 word, high-quality summary of the landing page, written in the style and tone appropriate for that platform.
+    - The summary should include relevant hashtags and keywords that will help boost the ad's reach and engagement on that platform.
+    - Make the summary engaging, actionable, and optimized for ad performance.
+    Return the result as a JSON object with each platform as a key.
     `;
 
     const { data, error } = await supabase.functions.invoke('generate-ai-content', {
@@ -289,21 +300,25 @@ export const generateAdSuggestions = async (
         primary_text: "Our proven strategy has helped 10,000+ businesses increase their conversion rates. Try it free for 14 days!",
         description: "Our proven strategy has helped 10,000+ businesses increase their conversion rates. Try it free for 14 days!",
         cta: "Start Free Trial",
+        platform_summary: "Promote your business with a compelling Facebook ad that grabs attention and encourages users to learn more about your services. Perfect for social engagement and brand awareness.",
       },
       instagram: {
         caption: "Transform your business results with our conversion optimization platform! 📈 #ConversionRate #MarketingTips #GrowthHacking",
         hashtags: "#ConversionRate #MarketingTips #GrowthHacking",
-        status: "approved"
+        status: "approved",
+        platform_summary: "Showcase your brand visually with an Instagram ad designed to inspire and connect with your audience. Ideal for creative storytelling and visual impact.",
       },
       twitter: {
         tweet_copy: "Stop guessing what works. Our platform increased conversion rates by an average of 250% for 10,000+ businesses. See how:",
         hashtags: "#ConversionRate #MarketingTips",
-        status: "approved"
+        status: "approved",
+        platform_summary: "Share quick, impactful updates about your landing page with a Twitter ad that sparks conversation and drives engagement among your followers.",
       },
       linkedin: {
         headline: "Increase Your ROI with Data-Driven Conversion Optimization",
         description: "Join industry leaders who've seen an average 250% increase in conversion rates using our enterprise platform.",
         cta: "Request Demo",
+        platform_summary: "Reach professionals and decision-makers with a LinkedIn ad that highlights your landing page’s value for business growth and industry leadership.",
       },
       google: {
         headline1: "Boost Conversion Rates 250%",
@@ -311,10 +326,12 @@ export const generateAdSuggestions = async (
         headline3: "Start Free 14-Day Trial",
         description1: "Join 10,000+ businesses using our proven platform to increase their website conversions.",
         description2: "No credit card required. See results in your first week or your money back.",
+        platform_summary: "Drive targeted traffic to your landing page with a Google ad focused on measurable results and clear calls to action for searchers.",
       },
       whatsapp: {
         message: "Try our platform for instant results!",
-        status: "approved"
+        status: "approved",
+        platform_summary: "Share your landing page instantly with friends and contacts using a WhatsApp message crafted for personal, direct communication.",
       }
     };
   }

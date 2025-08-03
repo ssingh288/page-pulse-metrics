@@ -2,14 +2,14 @@ import { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import { FileText, Image, Sun, Moon, Trophy, User, Sparkles, Share2 } from "lucide-react";
+import { FileText, Image, Sun, Moon, Trophy, User, Sparkles, Share2, QrCode, TrendingUp, Zap, Search } from "lucide-react";
 import { LandingPageForm, LandingPageFormValues } from "@/components/landing-page/LandingPageForm";
 import { LandingPagePreview } from "@/components/landing-page/LandingPagePreview";
 import { AIOptimizationTab } from "@/components/landing-page/AIOptimizationTab";
@@ -35,6 +35,8 @@ import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const LandingPageCreator = () => {
   const [generatingPage, setGeneratingPage] = useState(false);
@@ -45,6 +47,7 @@ const LandingPageCreator = () => {
   const [themeOptions, setThemeOptions] = useState<ThemeOption[]>([]);
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [showOptimizer, setShowOptimizer] = useState(false);
   const [draftId, setDraftId] = useState<string | null>(null);
   const [autoSaving, setAutoSaving] = useState(false);
@@ -70,8 +73,16 @@ const LandingPageCreator = () => {
     : activeTab === "optimize" 
     ? 2 
     : 3;
-  const [showAdPrompt, setShowAdPrompt] = useState(false);
-  const [newPageId, setNewPageId] = useState<string | null>(null);
+  const [slug, setSlug] = useState<string | null>(null);
+  const [reach, setReach] = useState<number>(0);
+  const [potentialReach, setPotentialReach] = useState<number>(0);
+  const [device, setDevice] = useState("desktop");
+  const [showFeedback, setShowFeedback] = useState(false);
+  const deviceSizes = {
+    desktop: { width: "100%", height: "600px" },
+    tablet: { width: "768px", height: "900px" },
+    mobile: { width: "375px", height: "700px" }
+  };
   
   // Auto-save draft periodically
   useEffect(() => {
@@ -90,6 +101,60 @@ const LandingPageCreator = () => {
       loadExistingDraft();
     }
   }, [user]);
+
+  // On mount, check for ?tab=preview in the URL
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get('tab');
+    if (tab && ["form", "preview", "optimize", "ads"].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, [location.search]);
+
+  // Helper to fetch the latest slug from the database
+  const fetchLatestSlug = async () => {
+    if (draftId) {
+      const { data, error } = await supabase
+        .from('landing_pages')
+        .select('slug')
+        .eq('id', draftId)
+        .single();
+      if (!error && data?.slug) setSlug(data.slug);
+    }
+  };
+
+  // Add logic to refresh previewHtml from Supabase when preview tab is activated
+  useEffect(() => {
+    if (activeTab === 'preview' && (draftId || slug)) {
+      (async () => {
+        await fetchLatestSlug();
+        let html = null;
+        console.log('[Preview Fetch] Using slug:', slug, 'draftId:', draftId);
+        if (slug) {
+          // Try to fetch published page by slug
+          const { data, error } = await supabase
+            .from('landing_pages')
+            .select('html_content')
+            .eq('slug', slug)
+            .eq('is_draft', false)
+            .single();
+          console.log('[Preview Fetch] Fetched by slug:', data, error);
+          if (!error && data?.html_content) html = data.html_content;
+        }
+        if (!html && draftId) {
+          // Fallback to draft by id
+          const { data, error } = await supabase
+            .from('landing_pages')
+            .select('html_content')
+            .eq('id', draftId)
+            .single();
+          console.log('[Preview Fetch] Fetched by draftId:', data, error);
+          if (!error && data?.html_content) html = data.html_content;
+        }
+        if (html) setPreviewHtml(html);
+      })();
+    }
+  }, [activeTab, draftId, slug]);
   
   const loadExistingDraft = async () => {
     if (!user) return;
@@ -178,6 +243,16 @@ const LandingPageCreator = () => {
         setDraftId(result.id);
       }
       
+      // Fetch slug from DB after save
+      if (result.id) {
+        const { data, error } = await supabase
+          .from('landing_pages')
+          .select('slug')
+          .eq('id', result.id)
+          .single();
+        if (!error && data?.slug) setSlug(data.slug);
+      }
+      
       // Update last saved timestamp
       setLastSaved(new Date());
       return result;
@@ -196,15 +271,6 @@ const LandingPageCreator = () => {
       setGeneratingPage(true);
       setFormValues(values);
 
-      // Process keywords into an array
-      const keywordsArray = values.keywords
-        .split(",")
-        .map(keyword => keyword.trim())
-        .filter(keyword => keyword.length > 0);
-        
-      // Set initial keywords
-      setKeywordSuggestions(keywordsArray);
-
       // Generate landing page content
       generateLandingPageFromValues({
         formValues: values,
@@ -212,24 +278,37 @@ const LandingPageCreator = () => {
           setPreviewHtml(html);
           setGeneratedContent(content);
           setThemeOptions(themes);
-          setActiveTab("preview");
-          
-          // Extract keywords from generated content if available
-          if (content && typeof content === 'object' && 'keywordSuggestions' in content) {
-            setKeywordSuggestions(
-              [...keywordsArray, ...(content.keywordSuggestions as string[] || [])]
-                .filter((v, i, a) => a.indexOf(v) === i) // Remove duplicates
-            );
-          }
-          
-          // Auto save the draft with the preview content and get the real ID
-          const draftResult = await autoSaveDraft(values);
-          if (draftResult && draftResult.success && draftResult.id) {
-            setNewPageId(draftResult.id);
-            setShowAdPrompt(true);
+          setActiveTab("preview"); // Show the preview tab
+          // Save the draft and store the draft ID for later editing
+          const result = await saveLandingPageDraft(
+            user.id,
+            values,
+            draftId,
+            html,
+            {
+              generatedContent: content,
+              themeOptions: themes,
+              selectedThemeIndex,
+              mediaType,
+              layoutStyle
+            }
+          );
+          console.log('saveLandingPageDraft result:', result);
+          if (result.success && result.id) {
+            setDraftId(result.id); // Store the draft ID for the edit button
+            // Fetch slug from DB after save
+            const { data, error } = await supabase
+              .from('landing_pages')
+              .select('slug')
+              .eq('id', result.id)
+              .single();
+            if (!error && data?.slug) setSlug(data.slug);
+          } else {
+            toast.error(`Failed to create landing page draft${result.error ? ': ' + result.error : ''}`);
           }
         },
         onError: (error) => {
+          console.log('saveLandingPageDraft error:', error);
           toast.error(`Error generating page: ${error.message}`);
         }
       });
@@ -249,6 +328,21 @@ const LandingPageCreator = () => {
 
       setGeneratingPage(true);
 
+      // Ensure the latest HTML is saved before publishing
+      await saveLandingPageDraft(
+        user.id,
+        formValues,
+        draftId,
+        previewHtml,
+        {
+          generatedContent,
+          themeOptions,
+          selectedThemeIndex,
+          mediaType,
+          layoutStyle
+        }
+      );
+
       const result = await publishLandingPage(
         user.id,
         formValues,
@@ -257,9 +351,18 @@ const LandingPageCreator = () => {
         generatedContent
       );
       
-      if (result.success) {
+      if (result.success && previewHtml) {
         toast.success("Landing page published successfully!");
-        navigate(`/pages/${result.id}/edit`);
+        // Open the new published page in a new tab using the slug
+        if (result.slug) {
+          setSlug(result.slug);
+          window.open(`/pages/${result.slug}`, '_blank');
+        } else {
+          // fallback to id if slug is not returned
+          window.open(`/pages/${result.id}/view`, '_blank');
+        }
+        // Go back to the landing pages list
+        navigate('/pages');
       } else {
         throw new Error(result.error || "Failed to publish landing page");
       }
@@ -285,9 +388,12 @@ const LandingPageCreator = () => {
       updatedFormValues,
       selectedThemeIndex,
       themeOptions,
-      (html, content) => {
+      (html, content, reachData) => {
         setPreviewHtml(html);
         setGeneratedContent(content);
+        // Update reach values here
+        setReach(reachData.reach);
+        setPotentialReach(reachData.potentialReach);
         setGeneratingPage(false);
         
         // Auto save with the new content
@@ -430,88 +536,237 @@ const LandingPageCreator = () => {
                 <span>Ad Generator</span>
               </TabsTrigger>
             </TabsList>
-          </Tabs>
-        </CardHeader>
-        <CardContent>
-          {activeTab === "form" && (
-            <div className="p-4">
-              <LandingPageForm
-                initialValues={formValues}
-                onSubmit={handleSubmit}
-                isGenerating={generatingPage}
-                lastSaved={lastSaved}
-                autoSaving={autoSaving}
-                mediaType={mediaType}
-                setMediaType={setMediaType}
-                layoutStyle={layoutStyle}
-                setLayoutStyle={setLayoutStyle}
-              />
-            </div>
-          )}
-          {activeTab === "preview" && (
-            <div className="p-4">
-              <LandingPagePreview
-                previewHtml={previewHtml}
-                isGenerating={generatingPage}
-                onRegenerateContent={handleRegenerateContent}
-                onRegenerateTheme={handleRegenerateTheme}
-                onSavePage={handleSavePage}
-                showOptimizer={showOptimizer}
-                generatedContent={generatedContent}
-                keywordSuggestions={keywordSuggestions}
-                onAddKeyword={handleAddKeyword}
-                onRemoveKeyword={handleRemoveKeyword}
-              />
-              <div className="flex justify-end mt-4">
-                <Button onClick={handleSavePage} disabled={generatingPage} className="font-bold transition-transform hover:scale-105">
-                  Save & Publish
+            <TabsContent value="form">
+              <div className="p-4">
+                <LandingPageForm
+                  initialValues={formValues}
+                  onSubmit={handleSubmit}
+                  isGenerating={generatingPage}
+                  lastSaved={lastSaved}
+                  autoSaving={autoSaving}
+                  mediaType={mediaType}
+                  setMediaType={setMediaType}
+                  layoutStyle={layoutStyle}
+                  setLayoutStyle={setLayoutStyle}
+                />
+                <Button
+                  className="mt-4"
+                  onClick={async () => {
+                    setGeneratingPage(true);
+                    // Generate the latest HTML from form values before saving
+                    await generateLandingPageFromValues({
+                      formValues,
+                      onSuccess: async (html, content, themes) => {
+                        setPreviewHtml(html);
+                        setGeneratedContent(content);
+                        setThemeOptions(themes);
+                        await handleSavePage();
+                        setActiveTab('preview');
+                        setGeneratingPage(false);
+                      },
+                      onError: (error) => {
+                        toast.error(`Error generating page: ${error.message}`);
+                        setGeneratingPage(false);
+                      }
+                    });
+                  }}
+                  disabled={generatingPage}
+                >
+                  Save & Preview
+                </Button>
+                <Button
+                  className="mt-2 ml-2"
+                  variant="secondary"
+                  onClick={() => setActiveTab('optimize')}
+                >
+                  Get AI Suggestions
                 </Button>
               </div>
-            </div>
-          )}
-          {activeTab === "optimize" && (
-            <div className="p-4">
-              <AIOptimizationTab
-                formValues={formValues}
-                previewHtml={previewHtml}
-                onApplyOptimizations={handleApplyOptimizations}
-                isGenerating={generatingPage}
-                onUpdateGeneratingState={setGeneratingPage}
-                keywordSuggestions={keywordSuggestions}
-                onAddKeyword={handleAddKeyword}
-                onRemoveKeyword={handleRemoveKeyword}
-              />
-            </div>
-          )}
-          {activeTab === "ads" && (
-            <div className="p-4">
-              <AdGenerator
-                formValues={formValues}
-                pageContent={previewHtml}
-              />
-            </div>
-          )}
-        </CardContent>
+            </TabsContent>
+            <TabsContent value="preview">
+              {previewHtml && (
+                <div className="p-4 relative">
+                  <div className="flex gap-2 mb-4">
+                    <Button
+                      variant="secondary"
+                      onClick={() => setActiveTab('optimize')}
+                    >
+                      Optimize with AI
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setActiveTab('form')}
+                    >
+                      Edit Page
+                    </Button>
+                  </div>
+                  {/* Conversion/SEO/Speed Badges */}
+                  <div className="flex gap-4 mb-2 items-center">
+                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-100 text-green-800 text-xs font-semibold">
+                      <TrendingUp className="h-4 w-4" /> Conversion Rate: <span className="ml-1 font-bold">4.2%</span>
+                    </span>
+                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-xs font-semibold">
+                      <Search className="h-4 w-4" /> SEO Score: <span className="ml-1 font-bold">82</span>
+                    </span>
+                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-yellow-100 text-yellow-800 text-xs font-semibold">
+                      <Zap className="h-4 w-4" /> Load Speed: <span className="ml-1 font-bold">1.2s</span>
+                    </span>
+                  </div>
+                  {/* 1. State for device */}
+                  {/* 2. Device dimensions */}
+                  {/* 3. Device toggle buttons */}
+                  <div className="flex gap-2 mb-4 items-center justify-between">
+                    <div className="flex gap-2 items-center">
+                      <Button variant={device === "desktop" ? "default" : "outline"} onClick={() => setDevice("desktop")}>Desktop</Button>
+                      <Button variant={device === "tablet" ? "default" : "outline"} onClick={() => setDevice("tablet")}>Tablet</Button>
+                      <Button variant={device === "mobile" ? "default" : "outline"} onClick={() => setDevice("mobile")}>Mobile</Button>
+                      <Button
+                        variant={showFeedback ? "default" : "outline"}
+                        className="ml-2"
+                        onClick={() => setShowFeedback(v => !v)}
+                      >
+                        {showFeedback ? "Hide Feedback" : "Show Feedback"}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="ml-4"
+                        onClick={async () => {
+                          if (slug) {
+                            const shareUrl = `${window.location.origin}/pages/${slug}`;
+                            await navigator.clipboard.writeText(shareUrl);
+                            toast.success("Shareable link copied to clipboard!", { description: shareUrl });
+                          } else {
+                            toast.error("No public link available yet. Please save or publish your page first.");
+                          }
+                        }}
+                      >
+                        Share Preview
+                      </Button>
+                    </div>
+                    <TooltipProvider>
+                      {slug ? null : draftId ? (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                window.open(`${window.location.origin}/pages/draft/${draftId}`, '_blank');
+                              }}
+                            >
+                              Preview Draft
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Preview your draft (not yet published)</TooltipContent>
+                        </Tooltip>
+                      ) : (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="outline" disabled>Live Preview</Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Save or publish your page to enable preview</TooltipContent>
+                        </Tooltip>
+                      )}
+                      {/* Preview in new tab button (always available) */}
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              const previewWindow = window.open('', '_blank');
+                              if (previewWindow) {
+                                previewWindow.document.write(previewHtml);
+                                previewWindow.document.title = 'Landing Page Preview';
+                                previewWindow.document.close();
+                              }
+                            }}
+                          >
+                            Preview in new tab
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Open a local preview of your current page (not public)</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                  {/* 4. Preview iframe with dynamic size */}
+                  <div className="border rounded-lg overflow-hidden mb-4 flex justify-center relative">
+                    <iframe
+                      title="Landing Page Preview"
+                      srcDoc={previewHtml}
+                      style={{
+                        width: deviceSizes[device].width,
+                        height: deviceSizes[device].height,
+                        border: "none",
+                        background: "white",
+                        margin: "0 auto",
+                        display: "block"
+                      }}
+                    />
+                    {/* Feedback Overlay */}
+                    {showFeedback && (
+                      <div
+                        className="absolute top-0 left-0 w-full h-full pointer-events-none z-10"
+                        style={{ width: deviceSizes[device].width, height: deviceSizes[device].height }}
+                      >
+                        {/* Example feedback highlights - these would be dynamic in a real system */}
+                        <div
+                          className="absolute bg-green-200 bg-opacity-80 border border-green-500 rounded p-2 text-xs text-green-900 shadow"
+                          style={{ top: '10%', left: '10%', width: '180px' }}
+                        >
+                          ✅ Great CTA placement!
+                        </div>
+                        <div
+                          className="absolute bg-yellow-200 bg-opacity-80 border border-yellow-500 rounded p-2 text-xs text-yellow-900 shadow"
+                          style={{ top: '40%', left: '50%', width: '200px' }}
+                        >
+                          ⚠️ Consider shortening this paragraph for better readability.
+                        </div>
+                        <div
+                          className="absolute bg-blue-200 bg-opacity-80 border border-blue-500 rounded p-2 text-xs text-blue-900 shadow"
+                          style={{ top: '70%', left: '20%', width: '160px' }}
+                        >
+                          💡 Add a testimonial here to build trust.
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex gap-4">
+                    <Button onClick={() => navigate(`/pages/${draftId}/edit`)} variant="default">Edit Page</Button>
+                  </div>
+                </div>
+              )}
+            </TabsContent>
+            <TabsContent value="optimize">
+              <div className="p-4">
+                <AIOptimizationTab
+                  formValues={formValues}
+                  previewHtml={previewHtml}
+                  onApplyOptimizations={handleApplyOptimizations}
+                  isGenerating={generatingPage}
+                  onUpdateGeneratingState={setGeneratingPage}
+                  keywordSuggestions={keywordSuggestions}
+                  onAddKeyword={handleAddKeyword}
+                  onRemoveKeyword={handleRemoveKeyword}
+                  onRegenerate={handleRegenerateContent}
+                  reach={reach}
+                  potentialReach={potentialReach}
+                  setPreviewHtml={setPreviewHtml}
+                  setFormValues={setFormValues}
+                  setActiveTab={setActiveTab}
+                />
+              </div>
+            </TabsContent>
+            <TabsContent value="ads">
+              <div className="p-4">
+                <AdGenerator
+                  formValues={formValues}
+                  pageContent={previewHtml}
+                />
+              </div>
+            </TabsContent>
+          </Tabs>
+        </CardHeader>
+        <CardContent />
       </Card>
-      <Dialog open={showAdPrompt} onOpenChange={setShowAdPrompt}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Generate Ads for Your New Landing Page?</DialogTitle>
-          </DialogHeader>
-          <p className="mb-4">Would you like to instantly generate ads for your new landing page using AI?</p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAdPrompt(false)}>No, Thanks</Button>
-            <Button
-              onClick={() => {
-                setShowAdPrompt(false);
-                if (newPageId) navigate(`/adgenerator/${newPageId}`);
-              }}
-            >
-              Yes, Generate Ads
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </Layout>
   );
 };

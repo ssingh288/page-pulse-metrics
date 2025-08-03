@@ -19,30 +19,36 @@ const fallbackAdSuggestions: AdSuggestion = {
     headline: "Boost Your Brand with AI!",
     primary_text: "Let AI create your next viral ad. Try it now!",
     description: "AI-powered ad generation for Facebook.",
-    cta: "Learn More"
+    cta: "Learn More",
+    platform_summary: "Promote your business with a compelling Facebook ad that grabs attention and encourages users to learn more about your services. Perfect for social engagement and brand awareness."
   },
   instagram: {
     caption: "Create stunning Instagram ads with AI ✨",
-    hashtags: "#AI #AdGenerator #Instagram"
+    hashtags: "#AI #AdGenerator #Instagram",
+    platform_summary: "Showcase your brand visually with an Instagram ad designed to inspire and connect with your audience. Ideal for creative storytelling and visual impact."
   },
   linkedin: {
     headline: "AI for B2B Marketing",
     description: "Generate LinkedIn ads that convert.",
-    cta: "Get Started"
+    cta: "Get Started",
+    platform_summary: "Reach professionals and decision-makers with a LinkedIn ad that highlights your landing page’s value for business growth and industry leadership."
   },
   twitter: {
     tweet_copy: "AI-generated Twitter ads are here! 🚀",
-    hashtags: "#AI #TwitterAds"
+    hashtags: "#AI #TwitterAds",
+    platform_summary: "Share quick, impactful updates about your landing page with a Twitter ad that sparks conversation and drives engagement among your followers."
   },
   google: {
     headline1: "AI Ad Generator",
     headline2: "Boost Your Reach",
     headline3: "Try Free Today",
     description1: "Create Google ads in seconds with AI.",
-    description2: "No credit card required."
+    description2: "No credit card required.",
+    platform_summary: "Drive targeted traffic to your landing page with a Google ad focused on measurable results and clear calls to action for searchers."
   },
   whatsapp: {
-    message: "Share your business with friends using our AI-generated WhatsApp ad!"
+    message: "Share your business with friends using our AI-generated WhatsApp ad!",
+    platform_summary: "Share your landing page instantly with friends and contacts using a WhatsApp message crafted for personal, direct communication."
   }
 };
 
@@ -130,8 +136,6 @@ export const AdGenerator: React.FC<AdGeneratorProps> = ({ formValues, pageConten
   const renderFacebookPreview = () => {
     if (isGenerating) return <div className="flex items-center justify-center h-32"><Loader2 className="animate-spin h-8 w-8 text-primary" /></div>;
     if (!adSuggestions?.facebook) return <div className="p-6 text-center text-muted-foreground">No Facebook ad generated yet. Click 'Generate Ads' to create one.</div>;
-    const editable = true;
-    const edited = adEdits.facebook || {};
     return (
       <div className="border rounded-lg p-4 bg-white">
         <div className="flex items-center gap-2 mb-3">
@@ -143,13 +147,10 @@ export const AdGenerator: React.FC<AdGeneratorProps> = ({ formValues, pageConten
             <p className="text-xs text-gray-500">Sponsored · <span>⋯</span></p>
           </div>
         </div>
-        <p className="text-sm mb-3">
-          <textarea
-            className="w-full border rounded p-1 text-sm"
-            value={edited.primary_text ?? adSuggestions.facebook.primary_text}
-            onChange={e => handleAdEdit("facebook", "primary_text", e.target.value)}
-          />
-        </p>
+        {/* Show platform_summary as the main ad text */}
+        {adSuggestions.facebook.platform_summary && (
+          <p className="text-sm mb-3 text-gray-900">{adSuggestions.facebook.platform_summary}</p>
+        )}
         <div className="border rounded mb-3 bg-gray-50">
           <div className="h-48 bg-gray-200 flex items-center justify-center">
             {adMedia.facebook ? (
@@ -204,6 +205,10 @@ export const AdGenerator: React.FC<AdGeneratorProps> = ({ formValues, pageConten
             <p className="text-xs text-gray-500">Sponsored</p>
           </div>
         </div>
+        {/* Show platform_summary as the main ad text */}
+        {adSuggestions.instagram.platform_summary && (
+          <p className="text-sm mb-3 text-gray-900">{adSuggestions.instagram.platform_summary}</p>
+        )}
         <div className="border rounded mb-3 bg-gray-50">
           <div className="h-64 bg-gray-200 flex items-center justify-center">
             {adMedia.instagram ? (
@@ -219,6 +224,18 @@ export const AdGenerator: React.FC<AdGeneratorProps> = ({ formValues, pageConten
         </div>
         <p className="text-sm mb-1">{adSuggestions.instagram.caption}</p>
         <p className="text-sm text-blue-500">{adSuggestions.instagram.hashtags}</p>
+        <div className="flex gap-2 mt-2 flex-wrap">
+          <Button size="sm" variant="secondary" onClick={() => handleRegenerateAd("instagram")} disabled={regenerating.instagram}>
+            {regenerating.instagram ? "Regenerating..." : "Regenerate"}
+          </Button>
+          <Button size="sm" variant="default" asChild>
+            <a href={getShareUrl("instagram")}
+               target="_blank"
+               rel="noopener noreferrer">
+              Post on Instagram
+            </a>
+          </Button>
+        </div>
         {adMedia.instagram && (
           <Button size="sm" variant="outline" onClick={() => setAdMedia(prev => ({ ...prev, instagram: null }))} className="mt-2">Remove Media</Button>
         )}
@@ -242,6 +259,10 @@ export const AdGenerator: React.FC<AdGeneratorProps> = ({ formValues, pageConten
             <p className="text-xs text-gray-500">Promoted · <span>⋯</span></p>
           </div>
         </div>
+        {/* Show platform_summary as the main ad text */}
+        {adSuggestions.linkedin.platform_summary && (
+          <p className="text-sm mb-3 text-gray-900">{adSuggestions.linkedin.platform_summary}</p>
+        )}
         <div className="border rounded mb-3 bg-gray-50">
           <div className="h-48 bg-gray-200 flex items-center justify-center">
             {adMedia.linkedin ? (
@@ -259,6 +280,18 @@ export const AdGenerator: React.FC<AdGeneratorProps> = ({ formValues, pageConten
             <p className="text-sm mb-2">{adSuggestions.linkedin.description}</p>
             <Button className="w-full">{adSuggestions.linkedin.cta}</Button>
           </div>
+        </div>
+        <div className="flex gap-2 mt-2 flex-wrap">
+          <Button size="sm" variant="secondary" onClick={() => handleRegenerateAd("linkedin")} disabled={regenerating.linkedin}>
+            {regenerating.linkedin ? "Regenerating..." : "Regenerate"}
+          </Button>
+          <Button size="sm" variant="default" asChild>
+            <a href={getShareUrl("linkedin")}
+               target="_blank"
+               rel="noopener noreferrer">
+              Post on LinkedIn
+            </a>
+          </Button>
         </div>
         {adMedia.linkedin && (
           <Button size="sm" variant="outline" onClick={() => setAdMedia(prev => ({ ...prev, linkedin: null }))} className="mt-2">Remove Media</Button>
@@ -283,6 +316,10 @@ export const AdGenerator: React.FC<AdGeneratorProps> = ({ formValues, pageConten
             <p className="text-xs text-gray-500">Promoted</p>
           </div>
         </div>
+        {/* Show platform_summary as the main ad text */}
+        {adSuggestions.twitter.platform_summary && (
+          <p className="text-sm mb-3 text-gray-900">{adSuggestions.twitter.platform_summary}</p>
+        )}
         <p className="text-sm mb-3">{adSuggestions.twitter.tweet_copy}</p>
         <p className="text-sm text-blue-500">{adSuggestions.twitter.hashtags}</p>
         <div className="border rounded mt-2 bg-gray-50">
@@ -297,6 +334,18 @@ export const AdGenerator: React.FC<AdGeneratorProps> = ({ formValues, pageConten
               <span className="text-gray-500">Ad Image</span>
             )}
           </div>
+        </div>
+        <div className="flex gap-2 mt-2 flex-wrap">
+          <Button size="sm" variant="secondary" onClick={() => handleRegenerateAd("twitter")} disabled={regenerating.twitter}>
+            {regenerating.twitter ? "Regenerating..." : "Regenerate"}
+          </Button>
+          <Button size="sm" variant="default" asChild>
+            <a href={getShareUrl("twitter")}
+               target="_blank"
+               rel="noopener noreferrer">
+              Post on Twitter
+            </a>
+          </Button>
         </div>
         {adMedia.twitter && (
           <Button size="sm" variant="outline" onClick={() => setAdMedia(prev => ({ ...prev, twitter: null }))} className="mt-2">Remove Media</Button>
@@ -322,6 +371,22 @@ export const AdGenerator: React.FC<AdGeneratorProps> = ({ formValues, pageConten
         <p className="text-blue-800 text-sm">{adSuggestions.google.headline3}</p>
         <p className="text-sm text-gray-600">{adSuggestions.google.description1}</p>
         <p className="text-sm text-gray-600">{adSuggestions.google.description2}</p>
+        {/* Show platform_summary as the main ad text */}
+        {adSuggestions.google.platform_summary && (
+          <p className="text-sm mb-3 text-gray-900">{adSuggestions.google.platform_summary}</p>
+        )}
+        <div className="flex gap-2 mt-2 flex-wrap">
+          <Button size="sm" variant="secondary" onClick={() => handleRegenerateAd("google")} disabled={regenerating.google}>
+            {regenerating.google ? "Regenerating..." : "Regenerate"}
+          </Button>
+          <Button size="sm" variant="default" asChild>
+            <a href={getShareUrl("google")}
+               target="_blank"
+               rel="noopener noreferrer">
+              Post on Google
+            </a>
+          </Button>
+        </div>
         {adMedia.google && (
           <Button size="sm" variant="outline" onClick={() => setAdMedia(prev => ({ ...prev, google: null }))} className="mt-2">Remove Media</Button>
         )}
@@ -344,6 +409,10 @@ export const AdGenerator: React.FC<AdGeneratorProps> = ({ formValues, pageConten
             <p className="text-xs text-gray-500">WhatsApp Message</p>
           </div>
         </div>
+        {/* Show platform_summary as the main ad text */}
+        {adSuggestions.whatsapp?.platform_summary && (
+          <p className="text-sm mb-3 text-gray-900">{adSuggestions.whatsapp.platform_summary}</p>
+        )}
         <p className="text-sm mb-3">{message}</p>
         <div className="border rounded mb-3 bg-gray-50">
           <div className="h-24 bg-gray-200 flex items-center justify-center">
@@ -357,6 +426,18 @@ export const AdGenerator: React.FC<AdGeneratorProps> = ({ formValues, pageConten
               <span className="text-gray-500">Ad Image</span>
             )}
           </div>
+        </div>
+        <div className="flex gap-2 mt-2 flex-wrap">
+          <Button size="sm" variant="secondary" onClick={() => handleRegenerateAd("whatsapp")} disabled={regenerating.whatsapp}>
+            {regenerating.whatsapp ? "Regenerating..." : "Regenerate"}
+          </Button>
+          <Button size="sm" variant="default" asChild>
+            <a href={getShareUrl("whatsapp")}
+               target="_blank"
+               rel="noopener noreferrer">
+              Post on WhatsApp
+            </a>
+          </Button>
         </div>
         {adMedia.whatsapp && (
           <Button size="sm" variant="outline" onClick={() => setAdMedia(prev => ({ ...prev, whatsapp: null }))} className="mt-2">Remove Media</Button>

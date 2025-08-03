@@ -78,29 +78,12 @@ export function AppSidebar() {
           href="/pages"
           active={isPartialActive("/pages")}
         />
-        <NavItem
-          icon={Upload}
-          label="Media Library"
-          href="/media"
-          active={isActive("/media")}
-        />
-        <NavItem
-          icon={Lightbulb}
-          label="AI Insights"
-          href="/pages/ai-insights"
-          active={isActive("/pages/ai-insights")}
-        />
       </div>
       
       <Separator className="my-4" />
       
       <div>
-        <Button asChild variant="default" className="w-full justify-start mb-4">
-          <Link to="/create-page">
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Create Landing Page
-          </Link>
-        </Button>
+        {/* Removed Create Landing Page button as per best practices */}
       </div>
       
       <div className="mt-auto space-y-1">

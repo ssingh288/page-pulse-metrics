@@ -23,6 +23,7 @@ import NotFound from "./pages/NotFound";
 import Home from "./pages/Home";
 import AIOptimizer from "./pages/AIOptimizer";
 import ResetPassword from "./pages/ResetPassword";
+import LandingPageView, { DraftLandingPageView } from "./pages/LandingPageView";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +40,8 @@ const App = () => (
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/pages/:slug" element={<LandingPageView />} />
+              <Route path="/pages/draft/:id" element={<DraftLandingPageView />} />
               
               {/* Protected routes */}
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />

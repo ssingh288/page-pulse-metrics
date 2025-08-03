@@ -46,6 +46,8 @@ interface LandingPage {
   published_at: string | null;
   created_at: string;
   updated_at: string;
+  is_draft: boolean;
+  slug: string; // Ensure slug is always present
 }
 
 // Define filter types
@@ -82,7 +84,10 @@ const LandingPages = () => {
           throw error;
         }
         
-        setPages(data || []);
+        setPages((data || []).map((page: any) => ({
+          ...page,
+          slug: page.slug || ""
+        })));
       } catch (error: any) {
         toast.error(`Error loading pages: ${error.message}`);
       } finally {
@@ -102,8 +107,8 @@ const LandingPages = () => {
     
     // Then filter by type
     if (filter === "all") return matchesSearch;
-    if (filter === "published") return matchesSearch && page.published_at !== null;
-    if (filter === "draft") return matchesSearch && page.published_at === null;
+    if (filter === "published") return matchesSearch && !page.is_draft;
+    if (filter === "draft") return matchesSearch && page.is_draft;
     
     return matchesSearch;
   });
@@ -131,7 +136,7 @@ const LandingPages = () => {
     setSortDirection(prev => prev === "desc" ? "asc" : "desc");
   };
 
-  const publishedCount = pages.filter(p => p.published_url).length;
+  const publishedCount = pages.filter(p => !p.is_draft).length;
   const draftCount = pages.length - publishedCount;
   
   useEffect(() => {
@@ -254,7 +259,7 @@ const LandingPages = () => {
               </Button>
               <Button asChild className="font-bold transition-transform hover:scale-105">
                 <Link to="/create-page">
-                  <Plus className="mr-2 h-4 w-4" /> Create New Page
+                  <Plus className="mr-2 h-4 w-4" /> Create Landing Page
                 </Link>
               </Button>
             </div>
@@ -280,13 +285,23 @@ const LandingPages = () => {
                 <Card key={page.id} className="overflow-hidden glassmorphic-card border-2 transition-all duration-300 hover:shadow-xl">
                   <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between">
                     <div className="space-y-1">
-                      <CardTitle className="text-base font-bold">{page.title}</CardTitle>
+                      <CardTitle className="text-base font-bold">
+                        {page.is_draft ? (
+                          <Link to={`/pages/${page.id}/edit`} className="text-yellow-700 underline hover:text-yellow-900">
+                            {page.title}
+                          </Link>
+                        ) : (
+                          <Link to={`/pages/${page.slug}`} className="text-primary underline hover:text-primary/80">
+                            {page.title}
+                          </Link>
+                        )}
+                      </CardTitle>
                       <CardDescription>
                         {page.campaign_type} • Created {format(new Date(page.created_at), "MMM d, yyyy")}
                       </CardDescription>
                     </div>
-                    <Badge variant={page.published_url ? "default" : "secondary"} className={page.published_url ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}>
-                      {page.published_url ? "Published" : "Draft"}
+                    <Badge variant={!page.is_draft ? "default" : "secondary"} className={!page.is_draft ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}>
+                      {!page.is_draft ? "Published" : "Draft"}
                     </Badge>
                   </CardHeader>
                   <CardContent className="p-4 pt-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
